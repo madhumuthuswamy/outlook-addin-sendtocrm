@@ -12,12 +12,12 @@
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Send Email to Flow" />
   <Description DefaultValue="Extracts the selected email (From, To, CC, Subject, Body, Attachments) and sends it to a Power Automate flow. Prevents duplicate sends for the same email." />
-  <IconUrl DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/assets/icon-64.png" />
-  <HighResIconUrl DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/assets/icon-128.png" />
-  <SupportUrl DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/support.html" />
+  <IconUrl DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-64.png" />
+  <HighResIconUrl DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-128.png" />
+  <SupportUrl DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/support.html" />
 
   <AppDomains>
-    <AppDomain>https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net</AppDomain>
+    <AppDomain>https://madhumuthuswamy.github.io</AppDomain>
   </AppDomains>
 
   <Hosts>
@@ -33,7 +33,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/commands.html" />
+        <SourceLocation DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.html" />
       </DesktopSettings>
     </Form>
   </FormSettings>
@@ -92,12 +92,12 @@
 
     <Resources>
       <bt:Images>
-        <bt:Image id="Icon.16x16" DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/assets/icon-16.png" />
-        <bt:Image id="Icon.32x32" DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/assets/icon-32.png" />
-        <bt:Image id="Icon.80x80" DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/assets/icon-80.png" />
+        <bt:Image id="Icon.16x16" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-16.png" />
+        <bt:Image id="Icon.32x32" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-32.png" />
+        <bt:Image id="Icon.80x80" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-80.png" />
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/commands.html" />
+        <bt:Url id="Commands.Url" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.html" />
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Case Integration" />
