@@ -1,0 +1,111 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<OfficeApp
+    xmlns="http://schemas.microsoft.com/office/appforoffice/1.1"
+    xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+    xmlns:bt="http://schemas.microsoft.com/office/officeappbasictypes/1.0"
+    xmlns:mailappor="http://schemas.microsoft.com/office/mailappversionoverrides/1.0"
+    xsi:type="MailApp">
+
+  <Id>cf393e2e-5fb9-43a3-b3c5-efce4b7404fc</Id>
+  <Version>1.0.0.0</Version>
+  <ProviderName>Nevada MMIS Support Team</ProviderName>
+  <DefaultLocale>en-US</DefaultLocale>
+  <DisplayName DefaultValue="Send Email to Flow" />
+  <Description DefaultValue="Extracts the selected email (From, To, CC, Subject, Body, Attachments) and sends it to a Power Automate flow. Prevents duplicate sends for the same email." />
+  <IconUrl DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/assets/icon-64.png" />
+  <HighResIconUrl DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/assets/icon-128.png" />
+  <SupportUrl DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/support.html" />
+
+  <AppDomains>
+    <AppDomain>https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net</AppDomain>
+  </AppDomains>
+
+  <Hosts>
+    <Host Name="Mailbox" />
+  </Hosts>
+
+  <Requirements>
+    <Sets>
+      <Set Name="Mailbox" MinVersion="1.8" />
+    </Sets>
+  </Requirements>
+
+  <FormSettings>
+    <Form xsi:type="ItemRead">
+      <DesktopSettings>
+        <SourceLocation DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/commands.html" />
+      </DesktopSettings>
+    </Form>
+  </FormSettings>
+
+  <Permissions>ReadWriteItem</Permissions>
+
+  <Rule xsi:type="RuleCollection" Mode="And">
+    <Rule xsi:type="ItemIs" ItemType="Message" FormType="Read" />
+  </Rule>
+
+  <DisableEntityHighlighting>false</DisableEntityHighlighting>
+
+  <VersionOverrides xmlns="http://schemas.microsoft.com/office/mailappversionoverrides" xsi:type="VersionOverridesV1_0">
+    <Requirements>
+      <bt:Sets DefaultMinVersion="1.8">
+        <bt:Set Name="Mailbox" />
+      </bt:Sets>
+    </Requirements>
+
+    <Hosts>
+      <Host xsi:type="MailHost">
+        <DesktopFormFactor>
+          <FunctionFile resid="Commands.Url" />
+
+          <ExtensionPoint xsi:type="MessageReadCommandSurface">
+            <OfficeTab id="TabDefault">
+              <Group id="SendToFlowGroup">
+                <Label resid="GroupLabel" />
+                <Icon>
+                  <bt:Image size="16" resid="Icon.16x16" />
+                  <bt:Image size="32" resid="Icon.32x32" />
+                  <bt:Image size="80" resid="Icon.80x80" />
+                </Icon>
+
+                <Control xsi:type="Button" id="SendToFlowButton">
+                  <Label resid="SendButton.Label" />
+                  <Supertip>
+                    <Title resid="SendButton.Label" />
+                    <Description resid="SendButton.Tooltip" />
+                  </Supertip>
+                  <Icon>
+                    <bt:Image size="16" resid="Icon.16x16" />
+                    <bt:Image size="32" resid="Icon.32x32" />
+                    <bt:Image size="80" resid="Icon.80x80" />
+                  </Icon>
+                  <Action xsi:type="ExecuteFunction">
+                    <FunctionName>sendEmailToFlow</FunctionName>
+                  </Action>
+                </Control>
+              </Group>
+            </OfficeTab>
+          </ExtensionPoint>
+        </DesktopFormFactor>
+      </Host>
+    </Hosts>
+
+    <Resources>
+      <bt:Images>
+        <bt:Image id="Icon.16x16" DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/assets/icon-16.png" />
+        <bt:Image id="Icon.32x32" DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/assets/icon-32.png" />
+        <bt:Image id="Icon.80x80" DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/assets/icon-80.png" />
+      </bt:Images>
+      <bt:Urls>
+        <bt:Url id="Commands.Url" DefaultValue="https://REPLACE-WITH-YOUR-SWA-HOSTNAME.azurestaticapps.net/commands.html" />
+      </bt:Urls>
+      <bt:ShortStrings>
+        <bt:String id="GroupLabel" DefaultValue="Case Integration" />
+        <bt:String id="SendButton.Label" DefaultValue="Send Email to Flow" />
+      </bt:ShortStrings>
+      <bt:LongStrings>
+        <bt:String id="SendButton.Tooltip" DefaultValue="Sends this email's details and attachments to Power Automate. Can only be sent once per email." />
+      </bt:LongStrings>
+    </Resources>
+  </VersionOverrides>
+</OfficeApp>
