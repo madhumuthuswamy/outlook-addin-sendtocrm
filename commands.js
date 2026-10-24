@@ -8,6 +8,7 @@
     "use strict";
 
     const defaultConfig = {
+        flowUrl: "https://REPLACE-WITH-YOUR-POWER-AUTOMATE-HTTP-POST-URL",
         sentFlagKey: "SentToFlow",
         sentTimestampKey: "SentToFlowTimestamp",
         sentMessageIdKey: "SentToFlowInternetMessageId",
@@ -36,6 +37,8 @@
                 await notify("A send request is already in progress for this email.");
                 return;
             }
+
+            validateConfiguration();
 
             const item = Office.context.mailbox.item;
             validateItemContext(item);
@@ -74,6 +77,12 @@
             if (event && typeof event.completed === "function") {
                 event.completed();
             }
+        }
+    }
+
+    function validateConfiguration() {
+        if (!config.flowUrl || config.flowUrl.indexOf("REPLACE-WITH-YOUR-POWER-AUTOMATE") >= 0) {
+            throw new Error("The add-in is not configured yet. Update the Power Automate flow URL first.");
         }
     }
 
@@ -198,9 +207,7 @@
     }
 
     async function postToFlow(payload) {
-        // Same-origin call to the Static Web App's Azure Function proxy (/api/sendToFlow),
-        // which holds the real Power Automate URL server-side and is never exposed to the client.
-        const response = await fetch("/api/sendToFlow", {
+        const response = await fetch(config.flowUrl, {
             method: "POST",
             headers: {
                 "Content-Type": "application/json"
