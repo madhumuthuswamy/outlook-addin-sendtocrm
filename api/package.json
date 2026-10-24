@@ -1,0 +1,6 @@
+{
+  "name": "outlook-addin-sendtocrm-api",
+  "version": "1.0.0",
+  "private": true,
+  "main": "sendToFlow/index.js"
+}
