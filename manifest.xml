@@ -13,7 +13,7 @@
   <DisplayName DefaultValue="Send Email to Flow" />
   <Description DefaultValue="Extracts the selected email (From, To, CC, Subject, Body, Attachments) and sends it to a Power Automate flow. Prevents duplicate sends for the same email." />
   <IconUrl DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-64.png" />
-  <HighResIconUrl DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-128.png" />
+  <HighResolutionIconUrl DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-128.png" />
   <SupportUrl DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/support.html" />
 
   <AppDomains>
