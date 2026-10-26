@@ -34,6 +34,7 @@
     <Form xsi:type="ItemRead">
       <DesktopSettings>
         <SourceLocation DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.html" />
+        <RequestedHeight>250</RequestedHeight>
       </DesktopSettings>
     </Form>
   </FormSettings>
@@ -62,11 +63,6 @@
             <OfficeTab id="TabDefault">
               <Group id="SendToFlowGroup">
                 <Label resid="GroupLabel" />
-                <Icon>
-                  <bt:Image size="16" resid="Icon.16x16" />
-                  <bt:Image size="32" resid="Icon.32x32" />
-                  <bt:Image size="80" resid="Icon.80x80" />
-                </Icon>
 
                 <Control xsi:type="Button" id="SendToFlowButton">
                   <Label resid="SendButton.Label" />
