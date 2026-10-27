@@ -7,7 +7,7 @@
     xsi:type="MailApp">
 
   <Id>cf393e2e-5fb9-43a3-b3c5-efce4b7404fc</Id>
-  <Version>1.0.0.1</Version>
+  <Version>1.0.0.2</Version>
   <ProviderName>Nevada MMIS Support Team</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Send Email to Flow" />
@@ -33,7 +33,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.v2.html" />
+        <SourceLocation DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.v3.html" />
         <RequestedHeight>250</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -93,7 +93,7 @@
         <bt:Image id="Icon.80x80" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-80.png" />
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.v2.html" />
+        <bt:Url id="Commands.Url" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.v3.html" />
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Case Integration" />
