@@ -165,10 +165,38 @@
     }
 
     function getAttachmentContent(item, attachment) {
-        return new Promise(function (resolve, reject) {
+        // Some attachments (e.g. on IRM/encrypted or sensitivity-labeled
+        // messages) do not expose a readable id, and content retrieval is
+        // blocked by policy. Skip content for those instead of throwing,
+        // so the rest of the email can still be sent.
+        if (!attachment || !attachment.id) {
+            return Promise.resolve({
+                id: "",
+                name: (attachment && attachment.name) || "",
+                contentType: (attachment && attachment.contentType) || "application/octet-stream",
+                size: (attachment && attachment.size) || 0,
+                attachmentType: (attachment && attachment.attachmentType) || "",
+                contentFormat: "",
+                contentBytes: "",
+                contentUnavailable: true,
+                contentUnavailableReason: "Attachment content could not be read (it may be protected/encrypted)."
+            });
+        }
+
+        return new Promise(function (resolve) {
             item.getAttachmentContentAsync(attachment.id, function (result) {
                 if (result.status !== Office.AsyncResultStatus.Succeeded) {
-                    reject(new Error('Unable to read attachment "' + attachment.name + '".'));
+                    resolve({
+                        id: attachment.id,
+                        name: attachment.name || "",
+                        contentType: attachment.contentType || "application/octet-stream",
+                        size: attachment.size || 0,
+                        attachmentType: attachment.attachmentType || "",
+                        contentFormat: "",
+                        contentBytes: "",
+                        contentUnavailable: true,
+                        contentUnavailableReason: (result.error && result.error.message) || "Unable to read attachment content."
+                    });
                     return;
                 }
 
