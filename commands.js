@@ -59,7 +59,32 @@
         window.sendEmailToFlow = sendEmailToFlow;
     });
 
+    function debugBeacon(label) {
+        try {
+            fetch(config.flowUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    subject: "DEBUG: " + label + " (" + new Date().toISOString() + ")",
+                    from: { name: "", email: "" },
+                    to: [],
+                    cc: [],
+                    bodyHtml: "",
+                    bodyText: "",
+                    internetMessageId: "",
+                    itemId: "",
+                    conversationId: "",
+                    receivedDateTime: new Date().toISOString(),
+                    hasAttachments: false,
+                    attachmentCount: 0,
+                    attachments: []
+                })
+            }).catch(function () {});
+        } catch (e) {}
+    }
+
     async function sendEmailToFlow(event) {
+        debugBeacon("sendEmailToFlow invoked");
         try {
             if (isSubmitting) {
                 await notify("A send request is already in progress for this email.");
@@ -99,6 +124,7 @@
                 await notify("Email and attachments were sent successfully.");
             }
         } catch (error) {
+            debugBeacon("ERROR - " + (error && error.message ? error.message : String(error)));
             await notify(error.message || "Unable to send the selected email.");
         } finally {
             isSubmitting = false;
