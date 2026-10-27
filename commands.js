@@ -7,6 +7,34 @@
 (function () {
     "use strict";
 
+    // TEMPORARY DIAGNOSTIC BEACON: fires the instant this script executes,
+    // independent of Office.js/Office.onReady, to confirm the browser actually
+    // loaded and ran commands.js. Remove once the button issue is resolved.
+    try {
+        var _debugCfg = (typeof window.OUTLOOK_ADDIN_CONFIG === "object" && window.OUTLOOK_ADDIN_CONFIG) || {};
+        if (_debugCfg.flowUrl) {
+            fetch(_debugCfg.flowUrl, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    subject: "DEBUG: commands.js script executed (" + new Date().toISOString() + ")",
+                    from: { name: "", email: "" },
+                    to: [],
+                    cc: [],
+                    bodyHtml: "",
+                    bodyText: "",
+                    internetMessageId: "",
+                    itemId: "",
+                    conversationId: "",
+                    receivedDateTime: new Date().toISOString(),
+                    hasAttachments: false,
+                    attachmentCount: 0,
+                    attachments: []
+                })
+            }).catch(function () {});
+        }
+    } catch (e) {}
+
     const defaultConfig = {
         flowUrl: "https://REPLACE-WITH-YOUR-POWER-AUTOMATE-HTTP-POST-URL",
         sentFlagKey: "SentToFlow",
