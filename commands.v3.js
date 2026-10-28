@@ -93,9 +93,12 @@
     }
 
     async function buildPayload(item) {
-        const bodyHtml = await getBody(item, Office.CoercionType.Html);
+        let bodyHtml = await getBody(item, Office.CoercionType.Html);
         const bodyText = await getBody(item, Office.CoercionType.Text);
         const attachments = await getAttachments(item);
+        const inlineAttachments = await getInlineAttachments(item);
+
+        bodyHtml = embedInlineImages(bodyHtml, inlineAttachments);
 
         return {
             subject: item.subject || "",
@@ -162,6 +165,49 @@
         }
 
         return attachments;
+    }
+
+    // Inline attachments (e.g. pasted screenshots/logos) are referenced from
+    // the HTML body via "cid:" URLs. They are fetched separately from regular
+    // attachments so their content can be embedded directly into the body as
+    // data: URIs instead of being sent as Dataverse attachment rows.
+    async function getInlineAttachments(item) {
+        const rawAttachments = Array.isArray(item.attachments) ? item.attachments : [];
+        const inlineAttachments = rawAttachments.filter(function (attachment) {
+            return !!attachment.isInline;
+        });
+
+        const results = [];
+        for (const attachment of inlineAttachments) {
+            results.push(await getAttachmentContent(item, attachment));
+        }
+
+        return results;
+    }
+
+    // Office.js does not expose the raw Content-ID used in "cid:" references,
+    // only the attachment's display name. Outlook typically names inline
+    // attachments after their Content-ID prefix (e.g. "image001.png" for
+    // "cid:image001.png@01D...."), so match on that as a practical heuristic.
+    function embedInlineImages(bodyHtml, inlineAttachments) {
+        if (!bodyHtml || !Array.isArray(inlineAttachments) || inlineAttachments.length === 0) {
+            return bodyHtml;
+        }
+
+        return bodyHtml.replace(/cid:([^"'\s)]+)/gi, function (match, cidValue) {
+            const cidName = decodeURIComponent(cidValue.split("@")[0]).toLowerCase();
+
+            const matched = inlineAttachments.find(function (attachment) {
+                const attachmentName = (attachment.name || "").toLowerCase();
+                return attachmentName === cidName || attachmentName.split("@")[0] === cidName;
+            });
+
+            if (!matched || !matched.contentBytes) {
+                return match;
+            }
+
+            return "data:" + (matched.contentType || "application/octet-stream") + ";base64," + matched.contentBytes;
+        });
     }
 
     function getAttachmentContent(item, attachment) {
