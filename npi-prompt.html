@@ -30,6 +30,13 @@
       margin-top: 6px;
       min-height: 16px;
     }
+    .hint {
+      color: #3b3a39;
+      font-size: 12px;
+      margin-top: 6px;
+      min-height: 16px;
+      font-style: italic;
+    }
     .buttons {
       margin-top: 16px;
       text-align: right;
@@ -56,6 +63,7 @@
 <body>
   <label for="npiInput">Enter NPI # (10 digits) *</label>
   <input id="npiInput" type="text" maxlength="10" inputmode="numeric" autocomplete="off" placeholder="e.g. 1234567890" />
+  <div id="hintMsg" class="hint"></div>
   <div id="errorMsg" class="error"></div>
   <div class="buttons">
     <button id="cancelBtn" type="button">Cancel</button>
@@ -66,12 +74,23 @@
     Office.onReady(function () {
       var input = document.getElementById("npiInput");
 
+      // Pre-fill with a candidate NPI # detected by the host page from the
+      // email's subject/body (passed as a query parameter), if any. The
+      // user can still edit or clear it before confirming.
+      var params = new URLSearchParams(window.location.search);
+      var suggested = (params.get("npi") || "").replace(/\D/g, "").slice(0, 10);
+      if (suggested) {
+        input.value = suggested;
+        document.getElementById("hintMsg").textContent = "Detected from the email. Please confirm or edit.";
+      }
+
       document.getElementById("okBtn").addEventListener("click", submitNpi);
       document.getElementById("cancelBtn").addEventListener("click", cancelDialog);
 
       input.addEventListener("input", function () {
         // Allow digits only, capped at 10 characters.
         input.value = input.value.replace(/\D/g, "").slice(0, 10);
+        document.getElementById("hintMsg").textContent = "";
       });
 
       input.addEventListener("keydown", function (e) {
@@ -81,6 +100,7 @@
       });
 
       input.focus();
+      input.select();
     });
 
     function submitNpi() {

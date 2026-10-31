@@ -58,11 +58,15 @@
                 return;
             }
 
+            await notify("Looking for an NPI # in the email...");
+            const bodyTextForScan = await getBody(item, Office.CoercionType.Text);
+            const suggestedNpi = findCandidateNpi(item.subject, bodyTextForScan);
+
             await notify("Waiting for NPI # entry...");
-            const npiNumber = await promptForNpi();
+            const npiNumber = await promptForNpi(suggestedNpi);
 
             await notify("Preparing email data...");
-            const payload = await buildPayload(item, npiNumber);
+            const payload = await buildPayload(item, npiNumber, bodyTextForScan);
             const flowResult = await postToFlow(payload);
 
             if (!flowResult.ok) {
@@ -98,9 +102,11 @@
         }
     }
 
-    async function buildPayload(item, npiNumber) {
+    async function buildPayload(item, npiNumber, precomputedBodyText) {
         let bodyHtml = await getBody(item, Office.CoercionType.Html);
-        const bodyText = await getBody(item, Office.CoercionType.Text);
+        const bodyText = typeof precomputedBodyText === "string"
+            ? precomputedBodyText
+            : await getBody(item, Office.CoercionType.Text);
         const attachments = await getAttachments(item);
         const inlineAttachments = await getInlineAttachments(item);
 
@@ -137,13 +143,40 @@
         };
     }
 
+    // Scans the subject and body text for a standalone 10-digit number to
+    // pre-fill as a suggested NPI #. A run of digits only counts if it is
+    // exactly 10 digits long with no adjacent digit on either side (so
+    // longer numbers, e.g. a 12-digit account/phone number, are ignored
+    // rather than matched on a 10-digit substring of them).
+    function findCandidateNpi(subject, bodyText) {
+        const pattern = /(?<![0-9])[0-9]{10}(?![0-9])/;
+
+        const subjectMatch = (subject || "").match(pattern);
+        if (subjectMatch) {
+            return subjectMatch[0];
+        }
+
+        const bodyMatch = (bodyText || "").match(pattern);
+        if (bodyMatch) {
+            return bodyMatch[0];
+        }
+
+        return "";
+    }
+
     // Shows a modal dialog (npi-prompt.html) requiring the user to enter a
     // 10-digit NPI # before the send can proceed. Resolves with the NPI
     // string on success; rejects (blocking the send) if cancelled/closed.
-    function promptForNpi() {
+    // An optional suggestedNpi is passed through as a query parameter so the
+    // dialog can pre-fill the field (the user can still edit or clear it).
+    function promptForNpi(suggestedNpi) {
+        const dialogUrl = suggestedNpi
+            ? config.npiDialogUrl + "?npi=" + encodeURIComponent(suggestedNpi)
+            : config.npiDialogUrl;
+
         return new Promise(function (resolve, reject) {
             Office.context.ui.displayDialogAsync(
-                config.npiDialogUrl,
+                dialogUrl,
                 { height: 30, width: 25, displayInIframe: true },
                 function (asyncResult) {
                     if (asyncResult.status !== Office.AsyncResultStatus.Succeeded) {
