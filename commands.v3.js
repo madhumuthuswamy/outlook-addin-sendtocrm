@@ -12,7 +12,10 @@
         sentFlagKey: "SentToFlow",
         sentTimestampKey: "SentToFlowTimestamp",
         sentMessageIdKey: "SentToFlowInternetMessageId",
-        notificationKey: "sendToFlowStatus"
+        notificationKey: "sendToFlowStatus",
+        // Resolved relative to this page's own location by default, so the
+        // dialog keeps working if the add-in is ever hosted elsewhere.
+        npiDialogUrl: new URL("npi-prompt.html", window.location.href).href
     };
 
     const config = Object.assign(
@@ -44,7 +47,6 @@
             validateItemContext(item);
 
             isSubmitting = true;
-            await notify("Preparing email data...");
 
             const customProps = await loadCustomProperties(item);
             const alreadySent = customProps.get(config.sentFlagKey);
@@ -56,7 +58,11 @@
                 return;
             }
 
-            const payload = await buildPayload(item);
+            await notify("Waiting for NPI # entry...");
+            const npiNumber = await promptForNpi();
+
+            await notify("Preparing email data...");
+            const payload = await buildPayload(item, npiNumber);
             const flowResult = await postToFlow(payload);
 
             if (!flowResult.ok) {
@@ -92,7 +98,7 @@
         }
     }
 
-    async function buildPayload(item) {
+    async function buildPayload(item, npiNumber) {
         let bodyHtml = await getBody(item, Office.CoercionType.Html);
         const bodyText = await getBody(item, Office.CoercionType.Text);
         const attachments = await getAttachments(item);
@@ -113,8 +119,69 @@
             receivedDateTime: toIsoString(item.dateTimeCreated),
             hasAttachments: attachments.length > 0,
             attachmentCount: attachments.length,
-            attachments: attachments
+            attachments: attachments,
+            npiNumber: npiNumber || "",
+            sentBy: getSentByInfo()
         };
+    }
+
+    // Identifies the Outlook user who actually clicked the ribbon button,
+    // as distinct from the email's From/To/Cc. Office.js exposes the signed
+    // -in mailbox owner via userProfile without requiring extra permissions.
+    function getSentByInfo() {
+        const profile = (Office.context.mailbox && Office.context.mailbox.userProfile) || {};
+        return {
+            displayName: profile.displayName || "",
+            emailAddress: profile.emailAddress || "",
+            timeZone: profile.timeZone || ""
+        };
+    }
+
+    // Shows a modal dialog (npi-prompt.html) requiring the user to enter a
+    // 10-digit NPI # before the send can proceed. Resolves with the NPI
+    // string on success; rejects (blocking the send) if cancelled/closed.
+    function promptForNpi() {
+        return new Promise(function (resolve, reject) {
+            Office.context.ui.displayDialogAsync(
+                config.npiDialogUrl,
+                { height: 30, width: 25, displayInIframe: true },
+                function (asyncResult) {
+                    if (asyncResult.status !== Office.AsyncResultStatus.Succeeded) {
+                        reject(new Error("Unable to open the NPI # entry dialog."));
+                        return;
+                    }
+
+                    const dialog = asyncResult.value;
+                    let settled = false;
+
+                    dialog.addEventHandler(Office.EventType.DialogMessageReceived, function (arg) {
+                        settled = true;
+
+                        let message = null;
+                        try {
+                            message = JSON.parse(arg.message);
+                        } catch (e) {
+                            message = null;
+                        }
+
+                        dialog.close();
+
+                        if (message && message.status === "ok" && /^\d{10}$/.test(message.npi)) {
+                            resolve(message.npi);
+                        } else {
+                            reject(new Error("NPI # entry was cancelled. The email was not sent."));
+                        }
+                    });
+
+                    dialog.addEventHandler(Office.EventType.DialogEventReceived, function () {
+                        if (!settled) {
+                            settled = true;
+                            reject(new Error("NPI # entry was cancelled. The email was not sent."));
+                        }
+                    });
+                }
+            );
+        });
     }
 
     function mapRecipient(recipient) {

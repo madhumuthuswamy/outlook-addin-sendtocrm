@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Enter NPI #</title>
+  <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <style>
+    body {
+      font-family: "Segoe UI", Tahoma, Arial, sans-serif;
+      padding: 16px;
+      margin: 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 6px;
+      font-weight: 600;
+      font-size: 13px;
+    }
+    input {
+      width: 100%;
+      padding: 8px;
+      font-size: 14px;
+      box-sizing: border-box;
+      border: 1px solid #8a8886;
+      border-radius: 2px;
+    }
+    .error {
+      color: #a80000;
+      font-size: 12px;
+      margin-top: 6px;
+      min-height: 16px;
+    }
+    .buttons {
+      margin-top: 16px;
+      text-align: right;
+    }
+    button {
+      padding: 6px 16px;
+      margin-left: 8px;
+      font-size: 13px;
+      cursor: pointer;
+    }
+    #okBtn {
+      background-color: #0f6cbd;
+      color: #fff;
+      border: 1px solid #0f6cbd;
+      border-radius: 2px;
+    }
+    #cancelBtn {
+      background-color: #fff;
+      border: 1px solid #8a8886;
+      border-radius: 2px;
+    }
+  </style>
+</head>
+<body>
+  <label for="npiInput">Enter NPI # (10 digits) *</label>
+  <input id="npiInput" type="text" maxlength="10" inputmode="numeric" autocomplete="off" placeholder="e.g. 1234567890" />
+  <div id="errorMsg" class="error"></div>
+  <div class="buttons">
+    <button id="cancelBtn" type="button">Cancel</button>
+    <button id="okBtn" type="button">OK</button>
+  </div>
+
+  <script>
+    Office.onReady(function () {
+      var input = document.getElementById("npiInput");
+
+      document.getElementById("okBtn").addEventListener("click", submitNpi);
+      document.getElementById("cancelBtn").addEventListener("click", cancelDialog);
+
+      input.addEventListener("input", function () {
+        // Allow digits only, capped at 10 characters.
+        input.value = input.value.replace(/\D/g, "").slice(0, 10);
+      });
+
+      input.addEventListener("keydown", function (e) {
+        if (e.key === "Enter") {
+          submitNpi();
+        }
+      });
+
+      input.focus();
+    });
+
+    function submitNpi() {
+      var value = document.getElementById("npiInput").value.trim();
+      var errorEl = document.getElementById("errorMsg");
+
+      if (!/^\d{10}$/.test(value)) {
+        errorEl.textContent = "NPI # is required and must be exactly 10 digits.";
+        return;
+      }
+
+      errorEl.textContent = "";
+      Office.context.ui.messageParent(JSON.stringify({ status: "ok", npi: value }));
+    }
+
+    function cancelDialog() {
+      Office.context.ui.messageParent(JSON.stringify({ status: "cancel" }));
+    }
+  </script>
+</body>
+</html>
