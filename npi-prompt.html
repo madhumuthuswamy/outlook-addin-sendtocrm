@@ -81,7 +81,7 @@
       var suggested = (params.get("npi") || "").replace(/\D/g, "").slice(0, 10);
       if (suggested) {
         input.value = suggested;
-        document.getElementById("hintMsg").textContent = "Detected from the email. Please confirm or edit.";
+        document.getElementById("hintMsg").textContent = "We found this NPI # in the email. Please confirm it's correct, or edit it below.";
       }
 
       document.getElementById("okBtn").addEventListener("click", submitNpi);
