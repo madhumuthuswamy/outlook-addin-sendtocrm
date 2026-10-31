@@ -7,6 +7,19 @@
 (function () {
     "use strict";
 
+    // Resolving the dialog URL against window.location can throw in some
+    // Outlook clients' hidden command-execution frame (location.href is not
+    // always a normal resolvable page URL there). Guard it so a failure here
+    // can never prevent the rest of this script (and the ribbon button
+    // function) from loading.
+    function resolveNpiDialogUrl() {
+        try {
+            return new URL("npi-prompt.html", window.location.href).href;
+        } catch (e) {
+            return "https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/npi-prompt.html";
+        }
+    }
+
     const defaultConfig = {
         flowUrl: "https://REPLACE-WITH-YOUR-POWER-AUTOMATE-HTTP-POST-URL",
         sentFlagKey: "SentToFlow",
@@ -15,7 +28,7 @@
         notificationKey: "sendToFlowStatus",
         // Resolved relative to this page's own location by default, so the
         // dialog keeps working if the add-in is ever hosted elsewhere.
-        npiDialogUrl: new URL("npi-prompt.html", window.location.href).href
+        npiDialogUrl: resolveNpiDialogUrl()
     };
 
     const config = Object.assign(
