@@ -5,36 +5,93 @@
   <title>Enter NPI #</title>
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
   <style>
+    :root {
+      color-scheme: light;
+      --surface: #ffffff;
+      --text: #242424;
+      --secondary-text: #605e5c;
+      --border: #8a8886;
+      --input-surface: #ffffff;
+      --error: #a4262c;
+      --primary: #0f6cbd;
+      --primary-text: #ffffff;
+      --button-surface: #ffffff;
+      --focus: #0f6cbd;
+    }
+
+    @media (prefers-color-scheme: dark) {
+      :root {
+        color-scheme: dark;
+        --surface: #292929;
+        --text: #f3f2f1;
+        --secondary-text: #d2d0ce;
+        --border: #a19f9d;
+        --input-surface: #1f1f1f;
+        --error: #ffb4ab;
+        --primary: #479ef5;
+        --primary-text: #1f1f1f;
+        --button-surface: #292929;
+        --focus: #479ef5;
+      }
+    }
+
+    @media (forced-colors: active) {
+      :root {
+        color-scheme: normal;
+        --surface: Canvas;
+        --text: CanvasText;
+        --secondary-text: GrayText;
+        --border: ButtonText;
+        --input-surface: Field;
+        --error: LinkText;
+        --primary: Highlight;
+        --primary-text: HighlightText;
+        --button-surface: ButtonFace;
+        --focus: Highlight;
+      }
+    }
+
     body {
       font-family: "Segoe UI", Tahoma, Arial, sans-serif;
       padding: 12px;
       margin: 0;
-      background: #292929;
-      color: #f3f2f1;
+      background: var(--surface);
+      color: var(--text);
     }
     label {
       display: block;
       margin-bottom: 6px;
       font-weight: 600;
       font-size: 13px;
-      color: #f3f2f1;
+      color: var(--text);
     }
     input {
       width: 100%;
       padding: 8px;
       font-size: 14px;
       box-sizing: border-box;
-      border: 1px solid #8a8886;
+      color: var(--text);
+      background: var(--input-surface);
+      border: 1px solid var(--border);
       border-radius: 2px;
     }
+    input::placeholder {
+      color: var(--secondary-text);
+      opacity: 1;
+    }
+    input:focus,
+    button:focus {
+      outline: 2px solid var(--focus);
+      outline-offset: 1px;
+    }
     .error {
-      color: #ffb4ab;
+      color: var(--error);
       font-size: 12px;
       margin-top: 6px;
       min-height: 16px;
     }
     .hint {
-      color: #d2d0ce;
+      color: var(--secondary-text);
       font-size: 12px;
       margin-top: 6px;
       min-height: 16px;
@@ -51,14 +108,15 @@
       cursor: pointer;
     }
     #okBtn {
-      background-color: #0f6cbd;
-      color: #fff;
-      border: 1px solid #0f6cbd;
+      background-color: var(--primary);
+      color: var(--primary-text);
+      border: 1px solid var(--primary);
       border-radius: 2px;
     }
     #cancelBtn {
-      background-color: #fff;
-      border: 1px solid #8a8886;
+      background-color: var(--button-surface);
+      color: var(--text);
+      border: 1px solid var(--border);
       border-radius: 2px;
     }
   </style>

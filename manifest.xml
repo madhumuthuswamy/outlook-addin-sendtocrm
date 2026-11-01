@@ -7,7 +7,7 @@
     xsi:type="MailApp">
 
   <Id>cf393e2e-5fb9-43a3-b3c5-efce4b7404fc</Id>
-  <Version>1.0.0.9</Version>
+  <Version>1.0.0.10</Version>
   <ProviderName>Nevada MMIS Support Team</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
   <DisplayName DefaultValue="Send Email to Flow" />
