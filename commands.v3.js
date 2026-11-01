@@ -66,8 +66,10 @@
 
             if (alreadySent === true || alreadySent === "true") {
                 const sentOn = customProps.get(config.sentTimestampKey) || "a previous time";
-                await notify("This email was already sent earlier. Duplicate sends are blocked.");
-                console.info("Email already sent on:", sentOn);
+                await notify(
+                    "This email was already sent to CRM on " + sentOn + ". Duplicate sends are blocked.",
+                    true
+                );
                 return;
             }
 
@@ -182,6 +184,9 @@
     // string on success; rejects (blocking the send) if cancelled/closed.
     // An optional suggestedNpi is passed through as a query parameter so the
     // dialog can pre-fill the field (the user can still edit or clear it).
+    // Opened as a real popup dialog (not displayInIframe) because this runs
+    // from the invisible/background frame used for ribbon ExecuteFunction
+    // commands; an in-frame dialog there would render but be invisible.
     function promptForNpi(suggestedNpi) {
         const dialogUrl = suggestedNpi
             ? config.npiDialogUrl + "?npi=" + encodeURIComponent(suggestedNpi)
@@ -190,7 +195,7 @@
         return new Promise(function (resolve, reject) {
             Office.context.ui.displayDialogAsync(
                 dialogUrl,
-                { height: 30, width: 25, displayInIframe: true },
+                { height: 30, width: 25 },
                 function (asyncResult) {
                     if (asyncResult.status !== Office.AsyncResultStatus.Succeeded) {
                         reject(new Error("Unable to open the NPI # entry dialog."));
@@ -459,7 +464,7 @@
         });
     }
 
-    function notify(message) {
+    function notify(message, persistent) {
         return new Promise(function (resolve) {
             Office.context.mailbox.item.notificationMessages.replaceAsync(
                 config.notificationKey,
@@ -467,7 +472,7 @@
                     type: Office.MailboxEnums.ItemNotificationMessageType.InformationalMessage,
                     message: message,
                     icon: "Icon.16x16",
-                    persistent: false
+                    persistent: !!persistent
                 },
                 function () {
                     resolve();
