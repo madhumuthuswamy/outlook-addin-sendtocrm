@@ -7,33 +7,6 @@
 (function () {
     "use strict";
 
-    // ------------------------------------------------------------------
-    // TEMPORARY DIAGNOSTIC LOGGING
-    // Fires a plain fetch() (no dependency on Office.js) to a free,
-    // browser-viewable inspection endpoint so we can see exactly how far
-    // execution gets, without needing DevTools/F12. View results at:
-    // https://app.beeceptor.com/console/outlookaddin-npi-debug
-    // REMOVE this block and all diagLog(...) calls once the root cause of
-    // the missing NPI popup is confirmed and fixed.
-    // ------------------------------------------------------------------
-    function diagLog(eventName, extra) {
-        try {
-            fetch("https://outlookaddin-npi-debug.free.beeceptor.com/log", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(Object.assign({
-                    event: eventName,
-                    ts: new Date().toISOString()
-                }, extra || {}))
-            }).catch(function () { /* ignore network errors from diagnostics */ });
-        } catch (e) {
-            // Swallow any synchronous failure too; diagnostics must never
-            // break the real add-in logic.
-        }
-    }
-
-    diagLog("script-loaded");
-
     // Resolving the dialog URL against window.location can throw in some
     // Outlook clients' hidden command-execution frame (location.href is not
     // always a normal resolvable page URL there). Guard it so a failure here
@@ -66,21 +39,15 @@
 
     let isSubmitting = false;
 
-    Office.onReady(function (info) {
-        diagLog("office-ready", { host: info && info.host, platform: info && info.platform });
-
+    Office.onReady(function () {
         if (Office.actions && Office.actions.associate) {
             Office.actions.associate("sendEmailToFlow", sendEmailToFlow);
-            diagLog("function-associated");
-        } else {
-            diagLog("associate-unavailable");
         }
 
         window.sendEmailToFlow = sendEmailToFlow;
     });
 
     async function sendEmailToFlow(event) {
-        diagLog("button-clicked");
         try {
             if (isSubmitting) {
                 await notify("A send request is already in progress for this email.");
@@ -111,9 +78,7 @@
             const suggestedNpi = findCandidateNpi(item.subject, bodyHtmlForScan);
 
             await notify("Waiting for NPI # entry...");
-            diagLog("before-open-dialog", { suggestedNpi: suggestedNpi || null });
             const npiNumber = await promptForNpi(suggestedNpi);
-            diagLog("dialog-resolved");
 
             await notify("Preparing email data...");
             const payload = await buildPayload(item, npiNumber);
@@ -131,7 +96,6 @@
                 await notify("Email and attachments were sent successfully.");
             }
         } catch (error) {
-            diagLog("caught-error", { message: (error && error.message) || String(error) });
             await notify(error.message || "Unable to send the selected email.");
         } finally {
             isSubmitting = false;
@@ -255,23 +219,15 @@
             ? config.npiDialogUrl + "?npi=" + encodeURIComponent(suggestedNpi)
             : config.npiDialogUrl;
 
-        diagLog("calling-displayDialogAsync", { dialogUrl: dialogUrl });
-
         return new Promise(function (resolve, reject) {
             Office.context.ui.displayDialogAsync(
                 dialogUrl,
-                { height: 30, width: 25 },
+                { height: 20, width: 20 },
                 function (asyncResult) {
                     if (asyncResult.status !== Office.AsyncResultStatus.Succeeded) {
-                        diagLog("displayDialogAsync-failed", {
-                            errorCode: asyncResult.error && asyncResult.error.code,
-                            errorMessage: asyncResult.error && asyncResult.error.message
-                        });
                         reject(new Error("Unable to open the NPI # entry dialog."));
                         return;
                     }
-
-                    diagLog("displayDialogAsync-succeeded");
 
                     const dialog = asyncResult.value;
                     let settled = false;
