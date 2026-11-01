@@ -24,7 +24,6 @@
         flowUrl: "https://REPLACE-WITH-YOUR-POWER-AUTOMATE-HTTP-POST-URL",
         sentFlagKey: "SentToFlow",
         sentTimestampKey: "SentToFlowTimestamp",
-        sentMessageIdKey: "SentToFlowInternetMessageId",
         notificationKey: "sendToFlowStatus",
         // Resolved relative to this page's own location by default, so the
         // dialog keeps working if the add-in is ever hosted elsewhere.
@@ -88,7 +87,7 @@
                 throw new Error(flowResult.message);
             }
 
-            await markAsSent(customProps, payload.internetMessageId);
+            await markAsSent(customProps);
 
             if (flowResult.duplicate) {
                 await notify("This email had already been processed. The request was not duplicated.");
@@ -474,10 +473,9 @@
         });
     }
 
-    async function markAsSent(customProps, internetMessageId) {
+    async function markAsSent(customProps) {
         customProps.set(config.sentFlagKey, true);
         customProps.set(config.sentTimestampKey, new Date().toLocaleString());
-        customProps.set(config.sentMessageIdKey, internetMessageId || "");
 
         await new Promise(function (resolve, reject) {
             customProps.saveAsync(function (result) {
