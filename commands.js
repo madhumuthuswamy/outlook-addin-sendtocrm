@@ -7,12 +7,55 @@
 (function () {
     "use strict";
 
+    // ------------------------------------------------------------------
+    // TEMPORARY DIAGNOSTIC LOGGING
+    // Fires a plain fetch() (no dependency on Office.js) to a free,
+    // browser-viewable inspection endpoint so we can see exactly how far
+    // execution gets, without needing DevTools/F12. View results at:
+    // https://app.beeceptor.com/console/outlookaddin-npi-debug
+    // REMOVE this block and all diagLog(...) calls once the root cause of
+    // the missing NPI popup is confirmed and fixed.
+    // ------------------------------------------------------------------
+    function diagLog(eventName, extra) {
+        try {
+            fetch("https://outlookaddin-npi-debug.free.beeceptor.com/log", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(Object.assign({
+                    event: eventName,
+                    ts: new Date().toISOString()
+                }, extra || {}))
+            }).catch(function () { /* ignore network errors from diagnostics */ });
+        } catch (e) {
+            // Swallow any synchronous failure too; diagnostics must never
+            // break the real add-in logic.
+        }
+    }
+
+    diagLog("script-loaded");
+
+    // Resolving the dialog URL against window.location can throw in some
+    // Outlook clients' hidden command-execution frame (location.href is not
+    // always a normal resolvable page URL there). Guard it so a failure here
+    // can never prevent the rest of this script (and the ribbon button
+    // function) from loading.
+    function resolveNpiDialogUrl() {
+        try {
+            return new URL("npi-prompt.html", window.location.href).href;
+        } catch (e) {
+            return "https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/npi-prompt.html";
+        }
+    }
+
     const defaultConfig = {
         flowUrl: "https://REPLACE-WITH-YOUR-POWER-AUTOMATE-HTTP-POST-URL",
         sentFlagKey: "SentToFlow",
         sentTimestampKey: "SentToFlowTimestamp",
         sentMessageIdKey: "SentToFlowInternetMessageId",
-        notificationKey: "sendToFlowStatus"
+        notificationKey: "sendToFlowStatus",
+        // Resolved relative to this page's own location by default, so the
+        // dialog keeps working if the add-in is ever hosted elsewhere.
+        npiDialogUrl: resolveNpiDialogUrl()
     };
 
     const config = Object.assign(
@@ -23,15 +66,21 @@
 
     let isSubmitting = false;
 
-    Office.onReady(function () {
+    Office.onReady(function (info) {
+        diagLog("office-ready", { host: info && info.host, platform: info && info.platform });
+
         if (Office.actions && Office.actions.associate) {
             Office.actions.associate("sendEmailToFlow", sendEmailToFlow);
+            diagLog("function-associated");
+        } else {
+            diagLog("associate-unavailable");
         }
 
         window.sendEmailToFlow = sendEmailToFlow;
     });
 
     async function sendEmailToFlow(event) {
+        diagLog("button-clicked");
         try {
             if (isSubmitting) {
                 await notify("A send request is already in progress for this email.");
@@ -44,19 +93,30 @@
             validateItemContext(item);
 
             isSubmitting = true;
-            await notify("Preparing email data...");
 
             const customProps = await loadCustomProperties(item);
             const alreadySent = customProps.get(config.sentFlagKey);
 
             if (alreadySent === true || alreadySent === "true") {
                 const sentOn = customProps.get(config.sentTimestampKey) || "a previous time";
-                await notify("This email was already sent earlier. Duplicate sends are blocked.");
-                console.info("Email already sent on:", sentOn);
+                await notify(
+                    "This email was already sent to CRM on " + sentOn + ". Duplicate sends are blocked.",
+                    true
+                );
                 return;
             }
 
-            const payload = await buildPayload(item);
+            await notify("Looking for an NPI # in the email...");
+            const bodyTextForScan = await getBody(item, Office.CoercionType.Text);
+            const suggestedNpi = findCandidateNpi(item.subject, bodyTextForScan);
+
+            await notify("Waiting for NPI # entry...");
+            diagLog("before-open-dialog", { suggestedNpi: suggestedNpi || null });
+            const npiNumber = await promptForNpi(suggestedNpi);
+            diagLog("dialog-resolved");
+
+            await notify("Preparing email data...");
+            const payload = await buildPayload(item, npiNumber, bodyTextForScan);
             const flowResult = await postToFlow(payload);
 
             if (!flowResult.ok) {
@@ -71,6 +131,7 @@
                 await notify("Email and attachments were sent successfully.");
             }
         } catch (error) {
+            diagLog("caught-error", { message: (error && error.message) || String(error) });
             await notify(error.message || "Unable to send the selected email.");
         } finally {
             isSubmitting = false;
@@ -92,10 +153,15 @@
         }
     }
 
-    async function buildPayload(item) {
-        const bodyHtml = await getBody(item, Office.CoercionType.Html);
-        const bodyText = await getBody(item, Office.CoercionType.Text);
+    async function buildPayload(item, npiNumber, precomputedBodyText) {
+        let bodyHtml = await getBody(item, Office.CoercionType.Html);
+        const bodyText = typeof precomputedBodyText === "string"
+            ? precomputedBodyText
+            : await getBody(item, Office.CoercionType.Text);
         const attachments = await getAttachments(item);
+        const inlineAttachments = await getInlineAttachments(item);
+
+        bodyHtml = embedInlineImages(bodyHtml, inlineAttachments);
 
         return {
             subject: item.subject || "",
@@ -110,8 +176,112 @@
             receivedDateTime: toIsoString(item.dateTimeCreated),
             hasAttachments: attachments.length > 0,
             attachmentCount: attachments.length,
-            attachments: attachments
+            attachments: attachments,
+            npiNumber: npiNumber || "",
+            sentBy: getSentByInfo()
         };
+    }
+
+    // Identifies the Outlook user who actually clicked the ribbon button,
+    // as distinct from the email's From/To/Cc. Office.js exposes the signed
+    // -in mailbox owner via userProfile without requiring extra permissions.
+    function getSentByInfo() {
+        const profile = (Office.context.mailbox && Office.context.mailbox.userProfile) || {};
+        return {
+            displayName: profile.displayName || "",
+            emailAddress: profile.emailAddress || "",
+            timeZone: profile.timeZone || ""
+        };
+    }
+
+    // Scans the subject and body text for a standalone 10-digit number to
+    // pre-fill as a suggested NPI #. A run of digits only counts if it is
+    // exactly 10 digits long with no adjacent digit on either side (so
+    // longer numbers, e.g. a 12-digit account/phone number, are ignored
+    // rather than matched on a 10-digit substring of them).
+    function findCandidateNpi(subject, bodyText) {
+        // Avoid lookbehind/lookahead regex assertions here: they are not
+        // supported by some JS engines still used to render Outlook/OWA
+        // (e.g. Internet Explorer/Trident), and an unsupported regex
+        // literal causes a parse-time SyntaxError that silently kills this
+        // entire script (no Office.onReady, no button handler at all).
+        // Instead, find every run of digits and only accept one that is
+        // exactly 10 digits long (so longer numbers are ignored).
+        function searchText(text) {
+            const digitRuns = (text || "").match(/[0-9]+/g) || [];
+            for (const run of digitRuns) {
+                if (run.length === 10) {
+                    return run;
+                }
+            }
+            return "";
+        }
+
+        return searchText(subject) || searchText(bodyText);
+    }
+
+    // Shows a modal dialog (npi-prompt.html) requiring the user to enter a
+    // 10-digit NPI # before the send can proceed. Resolves with the NPI
+    // string on success; rejects (blocking the send) if cancelled/closed.
+    // An optional suggestedNpi is passed through as a query parameter so the
+    // dialog can pre-fill the field (the user can still edit or clear it).
+    // Opened as a real popup dialog (not displayInIframe) because this runs
+    // from the invisible/background frame used for ribbon ExecuteFunction
+    // commands; an in-frame dialog there would render but be invisible.
+    function promptForNpi(suggestedNpi) {
+        const dialogUrl = suggestedNpi
+            ? config.npiDialogUrl + "?npi=" + encodeURIComponent(suggestedNpi)
+            : config.npiDialogUrl;
+
+        diagLog("calling-displayDialogAsync", { dialogUrl: dialogUrl });
+
+        return new Promise(function (resolve, reject) {
+            Office.context.ui.displayDialogAsync(
+                dialogUrl,
+                { height: 30, width: 25 },
+                function (asyncResult) {
+                    if (asyncResult.status !== Office.AsyncResultStatus.Succeeded) {
+                        diagLog("displayDialogAsync-failed", {
+                            errorCode: asyncResult.error && asyncResult.error.code,
+                            errorMessage: asyncResult.error && asyncResult.error.message
+                        });
+                        reject(new Error("Unable to open the NPI # entry dialog."));
+                        return;
+                    }
+
+                    diagLog("displayDialogAsync-succeeded");
+
+                    const dialog = asyncResult.value;
+                    let settled = false;
+
+                    dialog.addEventHandler(Office.EventType.DialogMessageReceived, function (arg) {
+                        settled = true;
+
+                        let message = null;
+                        try {
+                            message = JSON.parse(arg.message);
+                        } catch (e) {
+                            message = null;
+                        }
+
+                        dialog.close();
+
+                        if (message && message.status === "ok" && /^\d{10}$/.test(message.npi)) {
+                            resolve(message.npi);
+                        } else {
+                            reject(new Error("NPI # entry was cancelled. The email was not sent."));
+                        }
+                    });
+
+                    dialog.addEventHandler(Office.EventType.DialogEventReceived, function () {
+                        if (!settled) {
+                            settled = true;
+                            reject(new Error("NPI # entry was cancelled. The email was not sent."));
+                        }
+                    });
+                }
+            );
+        });
     }
 
     function mapRecipient(recipient) {
@@ -162,6 +332,49 @@
         }
 
         return attachments;
+    }
+
+    // Inline attachments (e.g. pasted screenshots/logos) are referenced from
+    // the HTML body via "cid:" URLs. They are fetched separately from regular
+    // attachments so their content can be embedded directly into the body as
+    // data: URIs instead of being sent as Dataverse attachment rows.
+    async function getInlineAttachments(item) {
+        const rawAttachments = Array.isArray(item.attachments) ? item.attachments : [];
+        const inlineAttachments = rawAttachments.filter(function (attachment) {
+            return !!attachment.isInline;
+        });
+
+        const results = [];
+        for (const attachment of inlineAttachments) {
+            results.push(await getAttachmentContent(item, attachment));
+        }
+
+        return results;
+    }
+
+    // Office.js does not expose the raw Content-ID used in "cid:" references,
+    // only the attachment's display name. Outlook typically names inline
+    // attachments after their Content-ID prefix (e.g. "image001.png" for
+    // "cid:image001.png@01D...."), so match on that as a practical heuristic.
+    function embedInlineImages(bodyHtml, inlineAttachments) {
+        if (!bodyHtml || !Array.isArray(inlineAttachments) || inlineAttachments.length === 0) {
+            return bodyHtml;
+        }
+
+        return bodyHtml.replace(/cid:([^"'\s)]+)/gi, function (match, cidValue) {
+            const cidName = decodeURIComponent(cidValue.split("@")[0]).toLowerCase();
+
+            const matched = inlineAttachments.find(function (attachment) {
+                const attachmentName = (attachment.name || "").toLowerCase();
+                return attachmentName === cidName || attachmentName.split("@")[0] === cidName;
+            });
+
+            if (!matched || !matched.contentBytes) {
+                return match;
+            }
+
+            return "data:" + (matched.contentType || "application/octet-stream") + ";base64," + matched.contentBytes;
+        });
     }
 
     function getAttachmentContent(item, attachment) {
@@ -300,7 +513,7 @@
         });
     }
 
-    function notify(message) {
+    function notify(message, persistent) {
         return new Promise(function (resolve) {
             Office.context.mailbox.item.notificationMessages.replaceAsync(
                 config.notificationKey,
@@ -308,7 +521,7 @@
                     type: Office.MailboxEnums.ItemNotificationMessageType.InformationalMessage,
                     message: message,
                     icon: "Icon.16x16",
-                    persistent: false
+                    persistent: !!persistent
                 },
                 function () {
                     resolve();
