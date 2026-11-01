@@ -164,19 +164,24 @@
     // longer numbers, e.g. a 12-digit account/phone number, are ignored
     // rather than matched on a 10-digit substring of them).
     function findCandidateNpi(subject, bodyText) {
-        const pattern = /(?<![0-9])[0-9]{10}(?![0-9])/;
-
-        const subjectMatch = (subject || "").match(pattern);
-        if (subjectMatch) {
-            return subjectMatch[0];
+        // Avoid lookbehind/lookahead regex assertions here: they are not
+        // supported by some JS engines still used to render Outlook/OWA
+        // (e.g. Internet Explorer/Trident), and an unsupported regex
+        // literal causes a parse-time SyntaxError that silently kills this
+        // entire script (no Office.onReady, no button handler at all).
+        // Instead, find every run of digits and only accept one that is
+        // exactly 10 digits long (so longer numbers are ignored).
+        function searchText(text) {
+            const digitRuns = (text || "").match(/[0-9]+/g) || [];
+            for (const run of digitRuns) {
+                if (run.length === 10) {
+                    return run;
+                }
+            }
+            return "";
         }
 
-        const bodyMatch = (bodyText || "").match(pattern);
-        if (bodyMatch) {
-            return bodyMatch[0];
-        }
-
-        return "";
+        return searchText(subject) || searchText(bodyText);
     }
 
     // Shows a modal dialog (npi-prompt.html) requiring the user to enter a
