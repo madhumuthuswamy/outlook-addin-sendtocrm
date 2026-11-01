@@ -120,9 +120,7 @@
         let bodyHtml = await getBody(item, Office.CoercionType.Html);
         const bodyText = await getBody(item, Office.CoercionType.Text);
         const attachments = await getAttachments(item);
-        const inlineAttachments = await getInlineAttachments(item);
-
-        bodyHtml = embedInlineImages(bodyHtml, inlineAttachments);
+        setInlineContentIds(bodyHtml, attachments);
 
         return {
             subject: item.subject || "",
@@ -299,59 +297,41 @@
 
     async function getAttachments(item) {
         const rawAttachments = Array.isArray(item.attachments) ? item.attachments : [];
-        const eligibleAttachments = rawAttachments.filter(function (attachment) {
-            return !attachment.isInline;
-        });
-
         const attachments = [];
-        for (const attachment of eligibleAttachments) {
+        for (const attachment of rawAttachments) {
             attachments.push(await getAttachmentContent(item, attachment));
         }
 
         return attachments;
     }
 
-    // Inline attachments (e.g. pasted screenshots/logos) are referenced from
-    // the HTML body via "cid:" URLs. They are fetched separately from regular
-    // attachments so their content can be embedded directly into the body as
-    // data: URIs instead of being sent as Dataverse attachment rows.
-    async function getInlineAttachments(item) {
-        const rawAttachments = Array.isArray(item.attachments) ? item.attachments : [];
-        const inlineAttachments = rawAttachments.filter(function (attachment) {
-            return !!attachment.isInline;
+    function setInlineContentIds(bodyHtml, attachments) {
+        if (!bodyHtml || !Array.isArray(attachments)) {
+            return;
+        }
+
+        const contentIds = [];
+        bodyHtml.replace(/cid:([^"'()\s>]+)/gi, function (match, value) {
+            const contentId = decodeURIComponent(value);
+            contentIds.push(contentId);
+            return match;
         });
 
-        const results = [];
-        for (const attachment of inlineAttachments) {
-            results.push(await getAttachmentContent(item, attachment));
-        }
-
-        return results;
-    }
-
-    // Office.js does not expose the raw Content-ID used in "cid:" references,
-    // only the attachment's display name. Outlook typically names inline
-    // attachments after their Content-ID prefix (e.g. "image001.png" for
-    // "cid:image001.png@01D...."), so match on that as a practical heuristic.
-    function embedInlineImages(bodyHtml, inlineAttachments) {
-        if (!bodyHtml || !Array.isArray(inlineAttachments) || inlineAttachments.length === 0) {
-            return bodyHtml;
-        }
-
-        return bodyHtml.replace(/cid:([^"'\s)]+)/gi, function (match, cidValue) {
-            const cidName = decodeURIComponent(cidValue.split("@")[0]).toLowerCase();
-
-            const matched = inlineAttachments.find(function (attachment) {
-                const attachmentName = (attachment.name || "").toLowerCase();
-                return attachmentName === cidName || attachmentName.split("@")[0] === cidName;
-            });
-
-            if (!matched || !matched.contentBytes) {
-                return match;
+        for (const attachment of attachments) {
+            if (!attachment.isInline || attachment.contentId) {
+                continue;
             }
 
-            return "data:" + (matched.contentType || "application/octet-stream") + ";base64," + matched.contentBytes;
-        });
+            const attachmentName = (attachment.name || "").toLowerCase();
+            const matchingContentId = contentIds.find(function (contentId) {
+                const cidName = contentId.split("@")[0].toLowerCase();
+                return cidName === attachmentName || cidName === attachmentName.split("@")[0];
+            });
+
+            if (matchingContentId) {
+                attachment.contentId = matchingContentId;
+            }
+        }
     }
 
     function getAttachmentContent(item, attachment) {
@@ -366,6 +346,8 @@
                 contentType: (attachment && attachment.contentType) || "application/octet-stream",
                 size: (attachment && attachment.size) || 0,
                 attachmentType: (attachment && attachment.attachmentType) || "",
+                isInline: !!(attachment && attachment.isInline),
+                contentId: (attachment && attachment.contentId) || "",
                 contentFormat: "",
                 contentBytes: "",
                 contentUnavailable: true,
@@ -382,6 +364,8 @@
                         contentType: attachment.contentType || "application/octet-stream",
                         size: attachment.size || 0,
                         attachmentType: attachment.attachmentType || "",
+                        isInline: !!attachment.isInline,
+                        contentId: attachment.contentId || "",
                         contentFormat: "",
                         contentBytes: "",
                         contentUnavailable: true,
@@ -397,6 +381,8 @@
                     contentType: attachment.contentType || "application/octet-stream",
                     size: attachment.size || 0,
                     attachmentType: attachment.attachmentType || "",
+                    isInline: !!attachment.isInline,
+                    contentId: attachment.contentId || "",
                     contentFormat: content.format || "",
                     contentBytes: normalizeAttachmentContent(content)
                 });
