@@ -107,8 +107,8 @@
             }
 
             await notify("Looking for an NPI # in the email...");
-            const bodyTextForScan = await getBody(item, Office.CoercionType.Text);
-            const suggestedNpi = findCandidateNpi(item.subject, bodyTextForScan);
+            const bodyHtmlForScan = await getBody(item, Office.CoercionType.Html);
+            const suggestedNpi = findCandidateNpi(item.subject, bodyHtmlForScan);
 
             await notify("Waiting for NPI # entry...");
             diagLog("before-open-dialog", { suggestedNpi: suggestedNpi || null });
@@ -116,7 +116,7 @@
             diagLog("dialog-resolved");
 
             await notify("Preparing email data...");
-            const payload = await buildPayload(item, npiNumber, bodyTextForScan);
+            const payload = await buildPayload(item, npiNumber);
             const flowResult = await postToFlow(payload);
 
             if (!flowResult.ok) {
@@ -153,11 +153,9 @@
         }
     }
 
-    async function buildPayload(item, npiNumber, precomputedBodyText) {
+    async function buildPayload(item, npiNumber) {
         let bodyHtml = await getBody(item, Office.CoercionType.Html);
-        const bodyText = typeof precomputedBodyText === "string"
-            ? precomputedBodyText
-            : await getBody(item, Office.CoercionType.Text);
+        const bodyText = await getBody(item, Office.CoercionType.Text);
         const attachments = await getAttachments(item);
         const inlineAttachments = await getInlineAttachments(item);
 
@@ -194,12 +192,10 @@
         };
     }
 
-    // Scans the subject and body text for a standalone 10-digit number to
-    // pre-fill as a suggested NPI #. A run of digits only counts if it is
-    // exactly 10 digits long with no adjacent digit on either side (so
-    // longer numbers, e.g. a 12-digit account/phone number, are ignored
-    // rather than matched on a 10-digit substring of them).
-    function findCandidateNpi(subject, bodyText) {
+    // Scans the subject and visible body text for an exact 10-digit number.
+    // Hyperlinks and hidden HTML are removed before scanning so values from
+    // URLs, tracking markup, and invisible email content are not suggested.
+    function findCandidateNpi(subject, bodyHtml) {
         // Avoid lookbehind/lookahead regex assertions here: they are not
         // supported by some JS engines still used to render Outlook/OWA
         // (e.g. Internet Explorer/Trident), and an unsupported regex
@@ -217,7 +213,33 @@
             return "";
         }
 
-        return searchText(subject) || searchText(bodyText);
+        return searchText(subject) || searchText(getVisibleBodyText(bodyHtml));
+    }
+
+    function getVisibleBodyText(bodyHtml) {
+        if (!bodyHtml || typeof DOMParser !== "function") {
+            return "";
+        }
+
+        const document = new DOMParser().parseFromString(bodyHtml, "text/html");
+        if (!document || !document.body) {
+            return "";
+        }
+
+        const excluded = document.querySelectorAll(
+            "a, script, style, noscript, template, title, head, meta, link, svg, " +
+            "[hidden], [aria-hidden='true'], " +
+            "[style*='display:none'], [style*='display: none'], " +
+            "[style*='visibility:hidden'], [style*='visibility: hidden']"
+        );
+
+        for (const element of excluded) {
+            if (element.parentNode) {
+                element.parentNode.removeChild(element);
+            }
+        }
+
+        return document.body.textContent || "";
     }
 
     // Shows a modal dialog (npi-prompt.html) requiring the user to enter a
