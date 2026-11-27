@@ -194,9 +194,9 @@
       var suggested = (params.get("npi") || "").replace(/\D/g, "").slice(0, 10);
       if (suggested) {
         input.value = suggested;
-        setStatus("NPI detected. Search for matching Provider Accounts.");
       }
       updateSearchButtonState();
+      updateNpiGuidance();
       document.getElementById("searchBtn").addEventListener("click", searchAccounts);
       document.getElementById("accountSelect").addEventListener("change", selectAccount);
       document.getElementById("okBtn").addEventListener("click", submitSelection);
@@ -206,6 +206,7 @@
         clearAccounts();
         clearMessages();
         updateSearchButtonState();
+        updateNpiGuidance();
       });
       input.addEventListener("keydown", function (event) {
         if (event.key === "Enter") searchAccounts();
@@ -218,7 +219,8 @@
       if (isSearching) return;
       var npi = document.getElementById("npiInput").value.trim();
       if (!/^\d{10}$/.test(npi)) {
-        setError("NPI # is required and must be exactly 10 digits.");
+        setError("NPI # must contain exactly 10 numeric digits.");
+        updateNpiGuidance();
         updateSearchButtonState();
         return;
       }
@@ -271,6 +273,23 @@
     function updateSearchButtonState() {
       var npi = document.getElementById("npiInput").value.trim();
       document.getElementById("searchBtn").disabled = isSearching || !/^\d{10}$/.test(npi);
+    }
+
+    function updateNpiGuidance() {
+      var npi = document.getElementById("npiInput").value.trim();
+      var digitCount = npi.length;
+      if (digitCount === 0) {
+        setStatus("Enter a 10-digit numeric NPI #.");
+      } else if (digitCount < 10) {
+        var remaining = 10 - digitCount;
+        setStatus(
+          digitCount + " of 10 digits entered. " +
+          remaining + (remaining === 1 ? " more digit is" : " more digits are") +
+          " required."
+        );
+      } else {
+        setStatus("10 of 10 digits entered. NPI # is valid. Click Search Accounts.");
+      }
     }
 
     function populateAccounts(accounts) {
