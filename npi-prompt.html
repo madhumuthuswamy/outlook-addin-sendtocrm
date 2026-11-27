@@ -34,6 +34,9 @@
         --focus: #479ef5;
       }
     }
+    html, body {
+      overflow: hidden;
+    }
     body {
       font-family: "Segoe UI", Tahoma, Arial, sans-serif;
       padding: 12px;
@@ -62,12 +65,19 @@
       display: flex;
       align-items: center;
       gap: 8px;
+      width: 86%;
     }
     .npi-row input {
       flex: 1;
       width: auto;
     }
     #searchBtn { margin: 0; white-space: nowrap; }
+    .account-row {
+      width: 86%;
+    }
+    .account-row select {
+      width: 100%;
+    }
     input:focus, select:focus, button:focus {
       outline: 2px solid var(--focus);
       outline-offset: 1px;
@@ -114,11 +124,13 @@
       autocomplete="off" placeholder="e.g. 1234567890" />
     <button id="searchBtn" type="button" disabled>Search Accounts</button>
   </div>
-  <select id="accountSelect" aria-label="Provider Account" disabled>
-    <option value="">Select a Provider Account</option>
-  </select>
   <div id="statusMsg" class="status"></div>
   <div id="errorMsg" class="error"></div>
+  <div class="account-row">
+    <select id="accountSelect" aria-label="Provider Account" disabled>
+      <option value="">Select a Provider Account</option>
+    </select>
+  </div>
   <div class="buttons">
     <button id="cancelBtn" type="button">Cancel</button>
     <button id="okBtn" type="button" disabled>Send to CRM</button>
