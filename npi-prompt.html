@@ -96,7 +96,7 @@
   <label for="npiInput">Enter NPI # (10 digits) *</label>
   <input id="npiInput" type="text" maxlength="10" inputmode="numeric"
     autocomplete="off" placeholder="e.g. 1234567890" />
-  <button id="searchBtn" type="button">Search Accounts</button>
+  <button id="searchBtn" type="button" disabled>Search Accounts</button>
   <select id="accountSelect" aria-label="Provider Account" disabled>
     <option value="">Select a Provider Account</option>
   </select>
@@ -120,6 +120,7 @@
         input.value = suggested;
         setStatus("NPI detected. Search for matching Provider Accounts.");
       }
+      updateSearchButtonState();
       document.getElementById("searchBtn").addEventListener("click", searchAccounts);
       document.getElementById("accountSelect").addEventListener("change", selectAccount);
       document.getElementById("okBtn").addEventListener("click", submitSelection);
@@ -128,6 +129,7 @@
         input.value = input.value.replace(/\D/g, "").slice(0, 10);
         clearAccounts();
         clearMessages();
+        updateSearchButtonState();
       });
       input.addEventListener("keydown", function (event) {
         if (event.key === "Enter") searchAccounts();
@@ -141,6 +143,7 @@
       var npi = document.getElementById("npiInput").value.trim();
       if (!/^\d{10}$/.test(npi)) {
         setError("NPI # is required and must be exactly 10 digits.");
+        updateSearchButtonState();
         return;
       }
       isSearching = true;
@@ -177,8 +180,13 @@
         setError(error.message || "Unable to search Provider Accounts.");
       } finally {
         isSearching = false;
-        document.getElementById("searchBtn").disabled = false;
+        updateSearchButtonState();
       }
+    }
+
+    function updateSearchButtonState() {
+      var npi = document.getElementById("npiInput").value.trim();
+      document.getElementById("searchBtn").disabled = isSearching || !/^\d{10}$/.test(npi);
     }
 
     function populateAccounts(accounts) {
