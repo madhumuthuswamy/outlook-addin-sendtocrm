@@ -77,10 +77,10 @@
             const suggestedNpi = findCandidateNpi(item.subject, bodyHtmlForScan);
 
             await notify("Waiting for NPI # entry...");
-            const npiNumber = await promptForNpi(suggestedNpi);
+            const accountSelection = await promptForAccount(suggestedNpi);
 
             await notify("Preparing email data...");
-            const payload = await buildPayload(item, npiNumber);
+            const payload = await buildPayload(item, accountSelection);
             const flowResult = await postToFlow(payload);
 
             if (!flowResult.ok) {
@@ -116,7 +116,7 @@
         }
     }
 
-    async function buildPayload(item, npiNumber) {
+    async function buildPayload(item, accountSelection) {
         let bodyHtml = await getBody(item, Office.CoercionType.Html);
         const bodyText = await getBody(item, Office.CoercionType.Text);
         const attachments = await getAttachments(item);
@@ -136,7 +136,9 @@
             hasAttachments: attachments.length > 0,
             attachmentCount: attachments.length,
             attachments: attachments,
-            npiNumber: npiNumber || "",
+            npiNumber: accountSelection.npiNumber || "",
+            accountId: accountSelection.accountId || "",
+            accountName: accountSelection.accountName || "",
             sentBy: getSentByInfo()
         };
     }
@@ -203,18 +205,17 @@
         return document.body.textContent || "";
     }
 
-    // Shows a modal dialog (npi-prompt.html) requiring the user to enter a
-    // 10-digit NPI # before the send can proceed. Resolves with the NPI
-    // string on success; rejects (blocking the send) if cancelled/closed.
+    // Shows the NPI and Account selection dialog before the send can proceed.
+    // The dialog resolves only after an Account has been selected.
     // An optional suggestedNpi is passed through as a query parameter so the
     // dialog can pre-fill the field (the user can still edit or clear it).
     // Opened as a real popup dialog (not displayInIframe) because this runs
     // from the invisible/background frame used for ribbon ExecuteFunction
     // commands; an in-frame dialog there would render but be invisible.
-    function promptForNpi(suggestedNpi) {
+    function promptForAccount(suggestedNpi) {
         const dialogUrl = suggestedNpi
-            ? config.npiDialogUrl + "?npi=" + encodeURIComponent(suggestedNpi)
-            : config.npiDialogUrl;
+            ? config.npiDialogUrl + "?npi=" + encodeURIComponent(suggestedNpi) + "&v=20261126b"
+            : config.npiDialogUrl + "?v=20261126b";
 
         return new Promise(function (resolve, reject) {
             Office.context.ui.displayDialogAsync(
@@ -241,10 +242,21 @@
 
                         dialog.close();
 
-                        if (message && message.status === "ok" && /^\d{10}$/.test(message.npi)) {
-                            resolve(message.npi);
+                        if (
+                            message &&
+                            message.status === "ok" &&
+                            /^\d{10}$/.test(message.npiNumber) &&
+                            /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(message.accountId) &&
+                            typeof message.accountName === "string" &&
+                            message.accountName.trim()
+                        ) {
+                            resolve({
+                                npiNumber: message.npiNumber,
+                                accountId: message.accountId,
+                                accountName: message.accountName.trim()
+                            });
                         } else {
-                            reject(new Error("NPI # entry was cancelled. The email was not sent."));
+                            reject(new Error("An Account must be selected before the email can be sent."));
                         }
                     });
 

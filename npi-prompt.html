@@ -2,8 +2,9 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Enter NPI #</title>
+  <title>Select Provider Account</title>
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
+  <script src="config.js?v=20261126b"></script>
   <style>
     :root {
       color-scheme: light;
@@ -18,7 +19,6 @@
       --button-surface: #ffffff;
       --focus: #0f6cbd;
     }
-
     @media (prefers-color-scheme: dark) {
       :root {
         color-scheme: dark;
@@ -34,23 +34,6 @@
         --focus: #479ef5;
       }
     }
-
-    @media (forced-colors: active) {
-      :root {
-        color-scheme: normal;
-        --surface: Canvas;
-        --text: CanvasText;
-        --secondary-text: GrayText;
-        --border: ButtonText;
-        --input-surface: Field;
-        --error: LinkText;
-        --primary: Highlight;
-        --primary-text: HighlightText;
-        --button-surface: ButtonFace;
-        --focus: Highlight;
-      }
-    }
-
     body {
       font-family: "Segoe UI", Tahoma, Arial, sans-serif;
       padding: 12px;
@@ -63,9 +46,8 @@
       margin-bottom: 6px;
       font-weight: 600;
       font-size: 13px;
-      color: var(--text);
     }
-    input {
+    input, select {
       width: 100%;
       padding: 8px;
       font-size: 14px;
@@ -75,45 +57,33 @@
       border: 1px solid var(--border);
       border-radius: 2px;
     }
-    input::placeholder {
-      color: var(--secondary-text);
-      opacity: 1;
-    }
-    input:focus,
-    button:focus {
+    select { margin-top: 12px; }
+    input:focus, select:focus, button:focus {
       outline: 2px solid var(--focus);
       outline-offset: 1px;
     }
-    .error {
-      color: var(--error);
+    .status, .error {
       font-size: 12px;
       margin-top: 6px;
       min-height: 16px;
     }
-    .hint {
-      color: var(--secondary-text);
-      font-size: 12px;
-      margin-top: 6px;
-      min-height: 16px;
-      font-style: italic;
-    }
-    .buttons {
-      margin-top: 10px;
-      text-align: right;
-    }
+    .status { color: var(--secondary-text); }
+    .error { color: var(--error); }
+    .buttons { margin-top: 14px; text-align: right; }
     button {
       padding: 5px 12px;
       margin-left: 6px;
       font-size: 13px;
       cursor: pointer;
     }
+    button:disabled { cursor: not-allowed; opacity: 0.55; }
     #okBtn {
       background-color: var(--primary);
       color: var(--primary-text);
       border: 1px solid var(--primary);
       border-radius: 2px;
     }
-    #cancelBtn {
+    #cancelBtn, #searchBtn {
       background-color: var(--button-surface);
       color: var(--text);
       border: 1px solid var(--border);
@@ -123,62 +93,156 @@
 </head>
 <body>
   <label for="npiInput">Enter NPI # (10 digits) *</label>
-  <input id="npiInput" type="text" maxlength="10" inputmode="numeric" autocomplete="off" placeholder="e.g. 1234567890" />
-  <div id="hintMsg" class="hint"></div>
+  <input id="npiInput" type="text" maxlength="10" inputmode="numeric"
+    autocomplete="off" placeholder="e.g. 1234567890" />
+  <button id="searchBtn" type="button">Search Accounts</button>
+  <select id="accountSelect" aria-label="Provider Account" disabled>
+    <option value="">Select a Provider Account</option>
+  </select>
+  <div id="statusMsg" class="status"></div>
   <div id="errorMsg" class="error"></div>
   <div class="buttons">
     <button id="cancelBtn" type="button">Cancel</button>
-    <button id="okBtn" type="button">OK</button>
+    <button id="okBtn" type="button" disabled>OK</button>
   </div>
 
   <script>
+    var config = window.OUTLOOK_ADDIN_CONFIG || {};
+    var selectedAccount = null;
+    var isSearching = false;
+
     Office.onReady(function () {
       var input = document.getElementById("npiInput");
-
-      // Pre-fill with a candidate NPI # detected by the host page from the
-      // email's subject/body (passed as a query parameter), if any. The
-      // user can still edit or clear it before confirming.
       var params = new URLSearchParams(window.location.search);
       var suggested = (params.get("npi") || "").replace(/\D/g, "").slice(0, 10);
       if (suggested) {
         input.value = suggested;
-        document.getElementById("hintMsg").textContent = "We found this NPI # in the email. Please confirm it's correct, or edit it below.";
+        setStatus("NPI detected. Search for matching Provider Accounts.");
       }
-
-      document.getElementById("okBtn").addEventListener("click", submitNpi);
+      document.getElementById("searchBtn").addEventListener("click", searchAccounts);
+      document.getElementById("accountSelect").addEventListener("change", selectAccount);
+      document.getElementById("okBtn").addEventListener("click", submitSelection);
       document.getElementById("cancelBtn").addEventListener("click", cancelDialog);
-
       input.addEventListener("input", function () {
-        // Allow digits only, capped at 10 characters.
         input.value = input.value.replace(/\D/g, "").slice(0, 10);
-        document.getElementById("hintMsg").textContent = "";
+        clearAccounts();
+        clearMessages();
       });
-
-      input.addEventListener("keydown", function (e) {
-        if (e.key === "Enter") {
-          submitNpi();
-        }
+      input.addEventListener("keydown", function (event) {
+        if (event.key === "Enter") searchAccounts();
       });
-
       input.focus();
       input.select();
     });
 
-    function submitNpi() {
-      var value = document.getElementById("npiInput").value.trim();
-      var errorEl = document.getElementById("errorMsg");
-
-      if (!/^\d{10}$/.test(value)) {
-        errorEl.textContent = "NPI # is required and must be exactly 10 digits.";
+    async function searchAccounts() {
+      if (isSearching) return;
+      var npi = document.getElementById("npiInput").value.trim();
+      if (!/^\d{10}$/.test(npi)) {
+        setError("NPI # is required and must be exactly 10 digits.");
         return;
       }
+      isSearching = true;
+      clearAccounts();
+      clearMessages();
+      setStatus("Searching Provider Accounts...");
+      document.getElementById("searchBtn").disabled = true;
+      try {
+        if (!config.accountSearchFlowUrl) {
+          throw new Error("Account search is not configured.");
+        }
+        var response = await fetch(config.accountSearchFlowUrl, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ npiNumber: npi })
+        });
+        var rawText = await response.text();
+        var result = rawText ? JSON.parse(rawText) : null;
+        if (!response.ok || !result) {
+          throw new Error("Account search failed. HTTP " + response.status + ".");
+        }
+        if (result.status === "error" || result.status === "invalid_request") {
+          throw new Error(result.message || "Account search failed.");
+        }
+        if (result.status === "not_found" || !Array.isArray(result.accounts) || result.accounts.length === 0) {
+          setStatus("");
+          setError(result.message || "No Provider Account was found for this NPI.");
+          return;
+        }
+        populateAccounts(result.accounts);
+        setStatus(result.accounts.length + " Provider Account(s) found. Select one to continue.");
+      } catch (error) {
+        setStatus("");
+        setError(error.message || "Unable to search Provider Accounts.");
+      } finally {
+        isSearching = false;
+        document.getElementById("searchBtn").disabled = false;
+      }
+    }
 
-      errorEl.textContent = "";
-      Office.context.ui.messageParent(JSON.stringify({ status: "ok", npi: value }));
+    function populateAccounts(accounts) {
+      var select = document.getElementById("accountSelect");
+      select.innerHTML = '<option value="">Select a Provider Account</option>';
+      accounts.forEach(function (account) {
+        if (!account || !account.accountId || !account.accountName) return;
+        var option = document.createElement("option");
+        option.value = account.accountId;
+        option.textContent = account.accountName;
+        option.dataset.accountName = account.accountName;
+        option.dataset.npiNumber = account.npiNumber || document.getElementById("npiInput").value;
+        select.appendChild(option);
+      });
+      select.disabled = select.options.length <= 1;
+    }
+
+    function selectAccount() {
+      var select = document.getElementById("accountSelect");
+      var option = select.options[select.selectedIndex];
+      selectedAccount = option && option.value ? {
+        accountId: option.value,
+        accountName: option.dataset.accountName,
+        npiNumber: option.dataset.npiNumber
+      } : null;
+      document.getElementById("okBtn").disabled = !selectedAccount;
+      clearMessages();
+    }
+
+    function submitSelection() {
+      if (!selectedAccount) {
+        setError("Select a Provider Account before continuing.");
+        return;
+      }
+      Office.context.ui.messageParent(JSON.stringify({
+        status: "ok",
+        npiNumber: selectedAccount.npiNumber,
+        accountId: selectedAccount.accountId,
+        accountName: selectedAccount.accountName
+      }));
     }
 
     function cancelDialog() {
       Office.context.ui.messageParent(JSON.stringify({ status: "cancel" }));
+    }
+
+    function clearAccounts() {
+      selectedAccount = null;
+      var select = document.getElementById("accountSelect");
+      select.innerHTML = '<option value="">Select a Provider Account</option>';
+      select.disabled = true;
+      document.getElementById("okBtn").disabled = true;
+    }
+
+    function clearMessages() {
+      setStatus("");
+      setError("");
+    }
+
+    function setStatus(message) {
+      document.getElementById("statusMsg").textContent = message || "";
+    }
+
+    function setError(message) {
+      document.getElementById("errorMsg").textContent = message || "";
     }
   </script>
 </body>
