@@ -240,8 +240,29 @@
           body: JSON.stringify({ npiNumber: npi })
         });
         var rawText = await response.text();
-        var result = rawText ? JSON.parse(rawText) : null;
-        if (!response.ok || !result) {
+        var result = null;
+        if (rawText) {
+          try {
+            result = JSON.parse(rawText);
+          } catch (parseError) {
+            if (response.ok) {
+              throw new Error("Account search returned an invalid response.");
+            }
+          }
+        }
+        if (!response.ok) {
+          var httpErrorBody = result && (result.body || result);
+          var httpErrorMessage = httpErrorBody && (
+            httpErrorBody.message ||
+            (httpErrorBody.error && httpErrorBody.error.message)
+          );
+          throw new Error(
+            httpErrorMessage
+              ? "Account search failed. HTTP " + response.status + ": " + httpErrorMessage
+              : "Account search failed. HTTP " + response.status + "."
+          );
+        }
+        if (!result) {
           throw new Error("Account search failed. HTTP " + response.status + ".");
         }
 

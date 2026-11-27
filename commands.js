@@ -218,8 +218,8 @@
     // commands; an in-frame dialog there would render but be invisible.
     function promptForAccount(suggestedNpi) {
         const dialogUrl = suggestedNpi
-            ? config.npiDialogUrl + "?npi=" + encodeURIComponent(suggestedNpi) + "&v=20261126v"
-            : config.npiDialogUrl + "?v=20261126v";
+            ? config.npiDialogUrl + "?npi=" + encodeURIComponent(suggestedNpi) + "&v=20261126w"
+            : config.npiDialogUrl + "?v=20261126w";
 
         return new Promise(function (resolve, reject) {
             Office.context.ui.displayDialogAsync(
