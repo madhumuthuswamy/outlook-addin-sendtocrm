@@ -35,7 +35,7 @@
       }
     }
     html, body {
-      overflow: hidden;
+      overflow-y: auto;
     }
     body {
       font-family: "Segoe UI", Tahoma, Arial, sans-serif;
@@ -60,7 +60,7 @@
       border: 1px solid var(--border);
       border-radius: 2px;
     }
-    select { margin-top: 12px; }
+    select { margin-top: 8px; }
     .npi-row {
       --action-width: 154px;
       display: grid;
@@ -95,11 +95,13 @@
       font-size: 12px;
       margin-top: 6px;
       margin-bottom: 6px;
-      min-height: 16px;
       width: 94%;
       margin-left: auto;
       margin-right: auto;
       box-sizing: border-box;
+    }
+    .status:empty, .error:empty {
+      display: none;
     }
     .status { color: var(--secondary-text); }
     .error { color: var(--error); }
