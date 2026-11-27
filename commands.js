@@ -117,6 +117,10 @@
     }
 
     async function buildPayload(item, accountSelection) {
+        if (!accountSelection || !accountSelection.accountId) {
+            throw new Error("A Provider Account is required before sending to CRM.");
+        }
+
         let bodyHtml = await getBody(item, Office.CoercionType.Html);
         const bodyText = await getBody(item, Office.CoercionType.Text);
         const attachments = await getAttachments(item);
@@ -447,6 +451,14 @@
                 ok: false,
                 duplicate: false,
                 message: "Power Automate returned HTTP " + response.status + (rawText ? ": " + rawText : ".")
+            };
+        }
+
+        if (parsedBody && String(parsedBody.status || "").toLowerCase() === "error") {
+            return {
+                ok: false,
+                duplicate: false,
+                message: parsedBody.message || "Power Automate could not process the email."
             };
         }
 
