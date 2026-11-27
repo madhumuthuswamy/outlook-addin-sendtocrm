@@ -214,13 +214,13 @@
     // commands; an in-frame dialog there would render but be invisible.
     function promptForAccount(suggestedNpi) {
         const dialogUrl = suggestedNpi
-            ? config.npiDialogUrl + "?npi=" + encodeURIComponent(suggestedNpi) + "&v=20261126f"
-            : config.npiDialogUrl + "?v=20261126f";
+            ? config.npiDialogUrl + "?npi=" + encodeURIComponent(suggestedNpi) + "&v=20261126g"
+            : config.npiDialogUrl + "?v=20261126g";
 
         return new Promise(function (resolve, reject) {
             Office.context.ui.displayDialogAsync(
                 dialogUrl,
-                { height: 20, width: 20 },
+                { height: 35, width: 30 },
                 function (asyncResult) {
                     if (asyncResult.status !== Office.AsyncResultStatus.Succeeded) {
                         reject(new Error("Unable to open the NPI # entry dialog."));

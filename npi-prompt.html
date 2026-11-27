@@ -48,7 +48,7 @@
       font-size: 13px;
     }
     input, select {
-      width: 92%;
+      width: 86%;
       padding: 8px;
       font-size: 14px;
       box-sizing: border-box;
@@ -58,7 +58,16 @@
       border-radius: 2px;
     }
     select { margin-top: 12px; }
-    #searchBtn { margin-top: 10px; }
+    .npi-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .npi-row input {
+      flex: 1;
+      width: auto;
+    }
+    #searchBtn { margin: 0; white-space: nowrap; }
     input:focus, select:focus, button:focus {
       outline: 2px solid var(--focus);
       outline-offset: 1px;
@@ -94,9 +103,11 @@
 </head>
 <body>
   <label for="npiInput">Enter NPI # (10 digits) *</label>
-  <input id="npiInput" type="text" maxlength="10" inputmode="numeric"
-    autocomplete="off" placeholder="e.g. 1234567890" />
-  <button id="searchBtn" type="button" disabled>Search Accounts</button>
+  <div class="npi-row">
+    <input id="npiInput" type="text" maxlength="10" inputmode="numeric"
+      autocomplete="off" placeholder="e.g. 1234567890" />
+    <button id="searchBtn" type="button" disabled>Search Accounts</button>
+  </div>
   <select id="accountSelect" aria-label="Provider Account" disabled>
     <option value="">Select a Provider Account</option>
   </select>
