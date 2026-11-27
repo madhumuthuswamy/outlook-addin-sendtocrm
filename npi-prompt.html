@@ -167,7 +167,7 @@
         }
         if (result.status === "not_found" || !Array.isArray(result.accounts) || result.accounts.length === 0) {
           setStatus("");
-          setError(result.message || "No Provider Account was found for this NPI.");
+          setError("No Provider Account was found for NPI # " + npi + ".");
           return;
         }
         populateAccounts(result.accounts);
