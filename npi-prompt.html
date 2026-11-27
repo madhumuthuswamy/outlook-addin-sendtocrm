@@ -233,6 +233,7 @@
         if (!config.accountSearchFlowUrl) {
           throw new Error("Account search is not configured.");
         }
+        document.getElementById("npiInput").disabled = true;
         var response = await fetch(config.accountSearchFlowUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -248,7 +249,11 @@
         var resultStatus = String(result.status || "").toLowerCase();
         var accounts = result.accounts;
         if (typeof accounts === "string") {
-          accounts = JSON.parse(accounts);
+          try {
+            accounts = JSON.parse(accounts);
+          } catch (parseError) {
+            throw new Error("Account search returned an invalid account list.");
+          }
         }
 
         if (resultStatus === "error" || resultStatus === "invalid_request") {
@@ -266,6 +271,7 @@
         setError(error.message || "Unable to search Provider Accounts.");
       } finally {
         isSearching = false;
+        document.getElementById("npiInput").disabled = false;
         updateSearchButtonState();
       }
     }
@@ -276,6 +282,11 @@
     }
 
     function updateNpiGuidance() {
+      if (isSearching) {
+        setStatus("Searching Provider Accounts...");
+        return;
+      }
+
       var npi = document.getElementById("npiInput").value.trim();
       var digitCount = npi.length;
       if (digitCount === 0) {
