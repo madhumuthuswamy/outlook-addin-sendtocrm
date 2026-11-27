@@ -74,7 +74,35 @@
     .npi-row input {
       width: 100%;
     }
-    #searchBtn { margin: 0; white-space: nowrap; }
+    #searchBtn {
+      margin: 0;
+      white-space: nowrap;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .search-icon {
+      display: inline-block;
+      width: 10px;
+      height: 10px;
+      margin-right: 6px;
+      border: 2px solid currentColor;
+      border-radius: 50%;
+      position: relative;
+      box-sizing: border-box;
+    }
+    .search-icon::after {
+      content: "";
+      position: absolute;
+      width: 6px;
+      height: 2px;
+      right: -5px;
+      bottom: -3px;
+      background: currentColor;
+      transform: rotate(45deg);
+      transform-origin: left center;
+      border-radius: 1px;
+    }
     .account-row {
       display: grid;
       grid-template-columns: minmax(0, 1fr) 154px;
@@ -138,7 +166,10 @@
   <div class="npi-row">
     <input id="npiInput" type="text" maxlength="10" inputmode="numeric"
       autocomplete="off" placeholder="e.g. 1234567890" />
-    <button id="searchBtn" type="button" disabled>Search Accounts</button>
+    <button id="searchBtn" type="button" disabled>
+      <span class="search-icon" aria-hidden="true"></span>
+      <span>Search Accounts</span>
+    </button>
   </div>
   <div id="statusMsg" class="status"></div>
   <div id="errorMsg" class="error"></div>
