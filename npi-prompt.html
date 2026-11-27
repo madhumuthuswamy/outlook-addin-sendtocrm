@@ -241,16 +241,24 @@
         if (!response.ok || !result) {
           throw new Error("Account search failed. HTTP " + response.status + ".");
         }
-        if (result.status === "error" || result.status === "invalid_request") {
+
+        result = result.body || result;
+        var resultStatus = String(result.status || "").toLowerCase();
+        var accounts = result.accounts;
+        if (typeof accounts === "string") {
+          accounts = JSON.parse(accounts);
+        }
+
+        if (resultStatus === "error" || resultStatus === "invalid_request") {
           throw new Error(result.message || "Account search failed.");
         }
-        if (result.status === "not_found" || !Array.isArray(result.accounts) || result.accounts.length === 0) {
+        if (resultStatus === "not_found" || !Array.isArray(accounts) || accounts.length === 0) {
           setStatus("");
           setError("No Provider Account was found for NPI # " + npi + ".");
           return;
         }
-        populateAccounts(result.accounts);
-        setStatus(result.accounts.length + " Provider Account(s) found. Select one to continue.");
+        populateAccounts(accounts);
+        setStatus(accounts.length + " Provider Account(s) found. Select one to continue.");
       } catch (error) {
         setStatus("");
         setError(error.message || "Unable to search Provider Accounts.");
