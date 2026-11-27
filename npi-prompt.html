@@ -62,20 +62,25 @@
     }
     select { margin-top: 12px; }
     .npi-row {
-      display: flex;
+      --action-width: 154px;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) var(--action-width);
       align-items: center;
       gap: 8px;
       width: 86%;
     }
     .npi-row input {
-      flex: 1;
       width: auto;
     }
     #searchBtn { margin: 0; white-space: nowrap; }
     .account-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 154px;
+      gap: 8px;
       width: 86%;
     }
     .account-row select {
+      grid-column: 1;
       width: 100%;
     }
     input:focus, select:focus, button:focus {
