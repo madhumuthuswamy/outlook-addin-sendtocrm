@@ -331,9 +331,11 @@
         if (!account || !account.accountId || !account.accountName) return;
         var option = document.createElement("option");
         option.value = account.accountId;
-        option.textContent = account.accountName;
+        option.textContent = account.accountName +
+          (account.providerType ? " - " + account.providerType : "");
         option.dataset.accountName = account.accountName;
         option.dataset.npiNumber = account.npiNumber || document.getElementById("npiInput").value;
+        option.dataset.providerType = account.providerType || "";
         select.appendChild(option);
       });
       select.disabled = select.options.length <= 1;
@@ -345,7 +347,8 @@
       selectedAccount = option && option.value ? {
         accountId: option.value,
         accountName: option.dataset.accountName,
-        npiNumber: option.dataset.npiNumber
+        npiNumber: option.dataset.npiNumber,
+        providerType: option.dataset.providerType
       } : null;
       document.getElementById("okBtn").disabled = !selectedAccount;
       clearMessages();
