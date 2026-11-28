@@ -33,7 +33,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.html?v=20261128d" />
+        <SourceLocation DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.html?v=20261128e" />
         <RequestedHeight>250</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -93,7 +93,7 @@
         <bt:Image id="Icon.80x80" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-80.png" />
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.html?v=20261128d" />
+        <bt:Url id="Commands.Url" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.html?v=20261128e" />
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Case Integration" />

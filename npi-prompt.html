@@ -166,6 +166,9 @@
       box-sizing: border-box;
     }
     .account-card {
+      display: flex;
+      align-items: flex-start;
+      gap: 16px;
       width: 100%;
       padding: 13px 16px;
       text-align: left;
@@ -175,6 +178,16 @@
       border-bottom: 1px solid var(--border);
       cursor: pointer;
       box-sizing: border-box;
+    }
+    .account-radio {
+      flex: 0 0 auto;
+      width: 20px;
+      height: 20px;
+      margin: 3px 0 0;
+      accent-color: var(--primary);
+    }
+    .account-card-content {
+      min-width: 0;
     }
     .account-card:last-child {
       border-bottom: 0;
@@ -207,6 +220,11 @@
     }
     .hidden-select {
       display: none;
+    }
+    .account-placeholder {
+      padding: 13px 16px;
+      color: var(--secondary-text);
+      font-size: 14px;
     }
     .status:empty, .error:empty {
       display: none;
@@ -264,7 +282,7 @@
     </select>
   </div>
   <div id="accountResults" class="account-results" aria-label="Provider Accounts">
-    <button class="account-card" type="button" disabled>Select Provider Account</button>
+    <div class="account-placeholder">Select Provider Account</div>
   </div>
   <div id="resultsHint" class="results-hint"></div>
   <div class="buttons">
@@ -428,13 +446,20 @@
         option.dataset.providerType = account.providerType || "";
         select.appendChild(option);
 
-        var card = document.createElement("button");
-        card.type = "button";
+        var card = document.createElement("label");
         card.className = "account-card";
         card.dataset.accountId = account.accountId;
         card.dataset.accountName = account.accountName;
         card.dataset.npiNumber = account.npiNumber || document.getElementById("npiInput").value;
         card.dataset.providerType = account.providerType || "";
+        var radio = document.createElement("input");
+        radio.type = "radio";
+        radio.name = "providerAccount";
+        radio.className = "account-radio";
+        radio.value = account.accountId;
+        radio.setAttribute("aria-label", account.accountName);
+        var content = document.createElement("span");
+        content.className = "account-card-content";
         var name = document.createElement("span");
         name.className = "account-card-name";
         name.textContent = account.accountName;
@@ -442,8 +467,10 @@
         details.className = "account-card-details";
         details.textContent = "NPI: " + card.dataset.npiNumber +
           (account.providerType ? "  •  Type: " + account.providerType : "");
-        card.appendChild(name);
-        card.appendChild(details);
+        content.appendChild(name);
+        content.appendChild(details);
+        card.appendChild(radio);
+        card.appendChild(content);
         card.addEventListener("click", function () {
           selectAccount(card);
         });
@@ -458,8 +485,12 @@
       if (!card || !card.dataset.accountId) return;
       document.querySelectorAll(".account-card").forEach(function (item) {
         item.classList.remove("selected");
+        var itemRadio = item.querySelector(".account-radio");
+        if (itemRadio) itemRadio.checked = false;
       });
       card.classList.add("selected");
+      var radio = card.querySelector(".account-radio");
+      if (radio) radio.checked = true;
       selectedAccount = {
         accountId: card.dataset.accountId,
         accountName: card.dataset.accountName,
@@ -493,7 +524,7 @@
       select.innerHTML = '<option value="">Select Provider Account</option>';
       select.disabled = true;
       document.getElementById("accountResults").innerHTML =
-        '<button class="account-card" type="button" disabled>Select Provider Account</button>';
+        '<div class="account-placeholder">Select Provider Account</div>';
       document.getElementById("resultsHint").textContent = "";
       document.getElementById("okBtn").disabled = true;
     }
