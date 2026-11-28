@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Select Provider Account</title>
+  <title>Track Email in CRM</title>
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
   <script src="config.js?v=20261126b"></script>
   <style>
@@ -162,25 +162,25 @@
   </style>
 </head>
 <body>
-  <label for="npiInput">Enter NPI # (10 digits) *</label>
+  <label for="npiInput">Enter Provider NPI # (10 digits) *</label>
   <div class="npi-row">
     <input id="npiInput" type="text" maxlength="10" inputmode="numeric"
       autocomplete="off" placeholder="e.g. 1234567890" />
     <button id="searchBtn" type="button" disabled>
       <span class="search-icon" aria-hidden="true"></span>
-      <span>Search Accounts</span>
+      <span>Find Provider</span>
     </button>
   </div>
   <div id="statusMsg" class="status"></div>
   <div id="errorMsg" class="error"></div>
   <div class="account-row">
     <select id="accountSelect" aria-label="Provider Account" disabled>
-      <option value="">Select a Provider Account</option>
+      <option value="">Select Provider Account</option>
     </select>
   </div>
   <div class="buttons">
     <button id="cancelBtn" type="button">Cancel</button>
-    <button id="okBtn" type="button" disabled>Send to CRM</button>
+    <button id="okBtn" type="button" disabled>Track &amp; Create Case</button>
   </div>
 
   <script>
@@ -320,13 +320,13 @@
           " required."
         );
       } else {
-        setStatus("10 of 10 digits entered. NPI # is valid. Click Search Accounts.");
+        setStatus("10 of 10 digits entered. NPI # is valid. Click Find Provider.");
       }
     }
 
     function populateAccounts(accounts) {
       var select = document.getElementById("accountSelect");
-      select.innerHTML = '<option value="">Select a Provider Account</option>';
+      select.innerHTML = '<option value="">Select Provider Account</option>';
       accounts.forEach(function (account) {
         if (!account || !account.accountId || !account.accountName) return;
         var option = document.createElement("option");
@@ -374,7 +374,7 @@
     function clearAccounts() {
       selectedAccount = null;
       var select = document.getElementById("accountSelect");
-      select.innerHTML = '<option value="">Select a Provider Account</option>';
+      select.innerHTML = '<option value="">Select Provider Account</option>';
       select.disabled = true;
       document.getElementById("okBtn").disabled = true;
     }

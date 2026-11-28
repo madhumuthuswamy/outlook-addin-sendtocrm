@@ -10,7 +10,7 @@
   <Version>1.0.0.17</Version>
   <ProviderName>Nevada MMIS Support Team</ProviderName>
   <DefaultLocale>en-US</DefaultLocale>
-  <DisplayName DefaultValue="Send Email to Flow" />
+  <DisplayName DefaultValue="Track Email in CRM" />
   <Description DefaultValue="Extracts the selected email (From, To, CC, Subject, Body, Attachments) and sends it to a Power Automate flow. Prevents duplicate sends for the same email." />
   <IconUrl DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-64.png" />
   <HighResolutionIconUrl DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-128.png" />
@@ -33,7 +33,7 @@
   <FormSettings>
     <Form xsi:type="ItemRead">
       <DesktopSettings>
-        <SourceLocation DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.html?v=20261128a" />
+        <SourceLocation DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.html?v=20261128b" />
         <RequestedHeight>250</RequestedHeight>
       </DesktopSettings>
     </Form>
@@ -93,11 +93,11 @@
         <bt:Image id="Icon.80x80" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/assets/icon-80.png" />
       </bt:Images>
       <bt:Urls>
-        <bt:Url id="Commands.Url" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.html?v=20261128a" />
+        <bt:Url id="Commands.Url" DefaultValue="https://madhumuthuswamy.github.io/outlook-addin-sendtocrm/commands.html?v=20261128b" />
       </bt:Urls>
       <bt:ShortStrings>
         <bt:String id="GroupLabel" DefaultValue="Case Integration" />
-        <bt:String id="SendButton.Label" DefaultValue="Send Email to Flow" />
+        <bt:String id="SendButton.Label" DefaultValue="Track Email in CRM" />
       </bt:ShortStrings>
       <bt:LongStrings>
         <bt:String id="SendButton.Tooltip" DefaultValue="Sends this email's details and attachments to Power Automate. Can only be sent once per email." />
