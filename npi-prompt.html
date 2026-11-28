@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Track Email in CRM</title>
+  <title>Track Email to CRM</title>
   <script src="https://appsforoffice.microsoft.com/lib/1/hosted/office.js"></script>
   <script src="config.js?v=20261126b"></script>
   <style>
@@ -14,7 +14,7 @@
       --border: #8a8886;
       --input-surface: #ffffff;
       --error: #a4262c;
-      --primary: #0f6cbd;
+      --primary: #1683f7;
       --primary-text: #ffffff;
       --button-surface: #ffffff;
       --focus: #0f6cbd;
@@ -39,10 +39,27 @@
     }
     body {
       font-family: "Segoe UI", Tahoma, Arial, sans-serif;
-      padding: 12px 20px;
+      padding: 22px 28px;
       margin: 0;
       background: var(--surface);
       color: var(--text);
+    }
+    .dialog-header {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding-bottom: 16px;
+      margin-bottom: 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    .dialog-icon {
+      color: var(--primary);
+      font-size: 30px;
+      line-height: 1;
+    }
+    .dialog-title {
+      font-size: 24px;
+      font-weight: 600;
     }
     label {
       display: block;
@@ -51,11 +68,11 @@
       margin-left: auto;
       margin-right: auto;
       font-weight: 600;
-      font-size: 13px;
+      font-size: 16px;
     }
     input, select {
       width: 100%;
-      padding: 8px;
+      padding: 11px;
       font-size: 14px;
       box-sizing: border-box;
       color: var(--text);
@@ -65,12 +82,12 @@
     }
     select { margin-top: 8px; }
     .npi-row {
-      --action-width: 154px;
+      --action-width: 190px;
       display: grid;
       grid-template-columns: minmax(0, 1fr) var(--action-width);
       align-items: center;
       gap: 8px;
-      width: 94%;
+      width: 96%;
       margin-left: auto;
       margin-right: auto;
     }
@@ -83,6 +100,11 @@
       display: inline-flex;
       align-items: center;
       justify-content: center;
+      background-color: var(--primary);
+      color: var(--primary-text);
+      border: 1px solid var(--primary);
+      border-radius: 4px;
+      font-weight: 600;
     }
     .search-icon {
       display: inline-block;
@@ -108,9 +130,9 @@
     }
     .account-row {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 154px;
+      grid-template-columns: minmax(0, 1fr);
       gap: 8px;
-      width: 94%;
+      width: 96%;
       margin-left: auto;
       margin-right: auto;
     }
@@ -130,6 +152,61 @@
       margin-left: auto;
       margin-right: auto;
       box-sizing: border-box;
+    }
+    .account-label {
+      margin-top: 34px;
+      margin-bottom: 8px;
+    }
+    .account-results {
+      width: 96%;
+      margin: 0 auto;
+      border: 1px solid var(--primary);
+      border-radius: 5px;
+      overflow: hidden;
+      box-sizing: border-box;
+    }
+    .account-card {
+      width: 100%;
+      padding: 13px 16px;
+      text-align: left;
+      color: var(--text);
+      background: var(--surface);
+      border: 0;
+      border-bottom: 1px solid var(--border);
+      cursor: pointer;
+      box-sizing: border-box;
+    }
+    .account-card:last-child {
+      border-bottom: 0;
+    }
+    .account-card:hover,
+    .account-card.selected {
+      background: #185a91;
+      color: #ffffff;
+    }
+    .account-card-name {
+      display: block;
+      font-size: 16px;
+      font-weight: 600;
+      margin-bottom: 7px;
+    }
+    .account-card-details {
+      display: block;
+      color: var(--secondary-text);
+      font-size: 14px;
+    }
+    .account-card.selected .account-card-details,
+    .account-card:hover .account-card-details {
+      color: #dceeff;
+    }
+    .results-hint {
+      width: 96%;
+      margin: 10px auto 0;
+      color: var(--secondary-text);
+      font-size: 12px;
+    }
+    .hidden-select {
+      display: none;
     }
     .status:empty, .error:empty {
       display: none;
@@ -165,6 +242,10 @@
   </style>
 </head>
 <body>
+  <div class="dialog-header">
+    <span class="dialog-icon" aria-hidden="true">&#9993;</span>
+    <span class="dialog-title">Track Email to CRM</span>
+  </div>
   <label for="npiInput">Enter Provider NPI # (10 digits) *</label>
   <div class="npi-row">
     <input id="npiInput" type="text" maxlength="10" inputmode="numeric"
@@ -176,11 +257,16 @@
   </div>
   <div id="statusMsg" class="status"></div>
   <div id="errorMsg" class="error"></div>
+  <label class="account-label" for="accountSelect">Provider Account *</label>
   <div class="account-row">
-    <select id="accountSelect" aria-label="Provider Account" disabled>
+    <select id="accountSelect" class="hidden-select" aria-label="Provider Account" disabled>
       <option value="">Select Provider Account</option>
     </select>
   </div>
+  <div id="accountResults" class="account-results" aria-label="Provider Accounts">
+    <button class="account-card" type="button" disabled>Select Provider Account</button>
+  </div>
+  <div id="resultsHint" class="results-hint"></div>
   <div class="buttons">
     <button id="cancelBtn" type="button">Cancel</button>
     <button id="okBtn" type="button" disabled>Track &amp; Create Case</button>
@@ -201,7 +287,6 @@
       updateSearchButtonState();
       updateNpiGuidance();
       document.getElementById("searchBtn").addEventListener("click", searchAccounts);
-      document.getElementById("accountSelect").addEventListener("change", selectAccount);
       document.getElementById("okBtn").addEventListener("click", submitSelection);
       document.getElementById("cancelBtn").addEventListener("click", cancelDialog);
       input.addEventListener("input", function () {
@@ -329,7 +414,9 @@
 
     function populateAccounts(accounts) {
       var select = document.getElementById("accountSelect");
+      var results = document.getElementById("accountResults");
       select.innerHTML = '<option value="">Select Provider Account</option>';
+      results.innerHTML = "";
       accounts.forEach(function (account) {
         if (!account || !account.accountId || !account.accountName) return;
         var option = document.createElement("option");
@@ -340,19 +427,45 @@
         option.dataset.npiNumber = account.npiNumber || document.getElementById("npiInput").value;
         option.dataset.providerType = account.providerType || "";
         select.appendChild(option);
+
+        var card = document.createElement("button");
+        card.type = "button";
+        card.className = "account-card";
+        card.dataset.accountId = account.accountId;
+        card.dataset.accountName = account.accountName;
+        card.dataset.npiNumber = account.npiNumber || document.getElementById("npiInput").value;
+        card.dataset.providerType = account.providerType || "";
+        var name = document.createElement("span");
+        name.className = "account-card-name";
+        name.textContent = account.accountName;
+        var details = document.createElement("span");
+        details.className = "account-card-details";
+        details.textContent = "NPI: " + card.dataset.npiNumber +
+          (account.providerType ? "  •  Type: " + account.providerType : "");
+        card.appendChild(name);
+        card.appendChild(details);
+        card.addEventListener("click", function () {
+          selectAccount(card);
+        });
+        results.appendChild(card);
       });
       select.disabled = select.options.length <= 1;
+      document.getElementById("resultsHint").textContent =
+        select.options.length > 1 ? "Select one provider account to continue." : "";
     }
 
-    function selectAccount() {
-      var select = document.getElementById("accountSelect");
-      var option = select.options[select.selectedIndex];
-      selectedAccount = option && option.value ? {
-        accountId: option.value,
-        accountName: option.dataset.accountName,
-        npiNumber: option.dataset.npiNumber,
-        providerType: option.dataset.providerType
-      } : null;
+    function selectAccount(card) {
+      if (!card || !card.dataset.accountId) return;
+      document.querySelectorAll(".account-card").forEach(function (item) {
+        item.classList.remove("selected");
+      });
+      card.classList.add("selected");
+      selectedAccount = {
+        accountId: card.dataset.accountId,
+        accountName: card.dataset.accountName,
+        npiNumber: card.dataset.npiNumber,
+        providerType: card.dataset.providerType
+      };
       document.getElementById("okBtn").disabled = !selectedAccount;
       clearMessages();
     }
@@ -379,6 +492,9 @@
       var select = document.getElementById("accountSelect");
       select.innerHTML = '<option value="">Select Provider Account</option>';
       select.disabled = true;
+      document.getElementById("accountResults").innerHTML =
+        '<button class="account-card" type="button" disabled>Select Provider Account</button>';
+      document.getElementById("resultsHint").textContent = "";
       document.getElementById("okBtn").disabled = true;
     }
 
